@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Light theme (default) — evose.ai-inspired warm off-white + navy */
+  :root {
+    color-scheme: light;
+    --color-background: 60 9% 97%;
+    --color-foreground: 240 10% 9%;
+    --color-card: 0 0% 100%;
+    --color-card-foreground: 240 10% 9%;
+    --color-muted: 240 5% 95%;
+    --color-muted-foreground: 240 4% 42%;
+    --color-border: 240 6% 89%;
+    --color-input: 240 6% 89%;
+    --color-primary: 240 10% 6%;
+    --color-primary-foreground: 0 0% 100%;
+    --color-secondary: 240 5% 95%;
+    --color-secondary-foreground: 240 10% 9%;
+    --color-accent: 240 10% 6%;
+    --color-accent-foreground: 0 0% 100%;
+    --color-destructive: 0 72% 46%;
+    --color-destructive-foreground: 0 0% 100%;
+    --color-ring: 240 10% 6%;
+  }
+
+  /* Dark theme — refined version of the original product palette */
+  :root.dark {
+    color-scheme: dark;
+    --color-background: 240 10% 4%;
+    --color-foreground: 0 0% 98%;
+    --color-card: 240 6% 7%;
+    --color-card-foreground: 0 0% 98%;
+    --color-muted: 240 4% 16%;
+    --color-muted-foreground: 240 5% 65%;
+    --color-border: 240 4% 16%;
+    --color-input: 240 4% 16%;
+    --color-primary: 0 0% 98%;
+    --color-primary-foreground: 240 10% 10%;
+    --color-secondary: 240 4% 16%;
+    --color-secondary-foreground: 0 0% 98%;
+    --color-accent: 0 0% 98%;
+    --color-accent-foreground: 240 10% 10%;
+    --color-destructive: 0 63% 31%;
+    --color-destructive-foreground: 0 0% 98%;
+    --color-ring: 0 0% 98%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+}
+
+@layer utilities {
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+
+  /* evose.ai-style decorative dotted-grid backdrop for section/page backgrounds */
+  .bg-dot-grid {
+    background-image: radial-gradient(hsl(var(--color-foreground) / 0.12) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  :root.dark .bg-dot-grid {
+    background-image: radial-gradient(hsl(var(--color-foreground) / 0.08) 1px, transparent 1px);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(var(--color-border)); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--color-muted-foreground) / 0.5); }

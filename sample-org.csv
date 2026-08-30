@@ -1,0 +1,34 @@
+role,title,agentType,provider,model,machineType,reportsTo,skills,customAgentMd,skill:executive-strategy,skill:web-audit,skill:ui-ux-design
+CEO,Chief Executive Officer,openclaw,anthropic,claude-sonnet-4-6,e2-small,,executive-strategy,"# CEO Mission Guidelines
+Always align tasks with Acme corporate objectives. Ensure subordinate roles (Engineer, Designer) are unblocked. Verify quality before completing goals.","---
+name: executive-strategy
+description: Formulate company roadmap, coordinate specialized direct reports, and manage budgets.
+---
+
+# Executive Strategy
+
+1. Poll the Board of Directors for overarching milestone targets.
+2. Structure high-level goals and delegate operational components to engineering or design subordinates.
+3. Establish robust blocker chains to prevent race conditions during collaborative work.","---
+name: web-audit
+description: Scan active endpoints and report latency metrics.
+---
+
+# Web Auditor
+
+1. Scan active URL and target endpoints for responsiveness.
+2. Log warnings, network latency, and HTTP error codes.
+3. Inform management if the gateway service is unreachable.","---
+name: ui-ux-design
+description: Audit visual tags, color theory schemes, and interface styling.
+---
+
+# UI/UX Designer
+
+1. Review visual components and styling specifications before deployment.
+2. Verify visual color theory, typography, and contrast standards are adhered to.
+3. Suggest CSS adjustments to maintain visual quality across device screens."
+Engineer,Senior Software Engineer,opencode,anthropic,claude-sonnet-4-6,e2-small,CEO,web-audit,"# Engineer Custom Rules
+Follow technical spec documents strictly. Run and verify unit tests before marking any subtask done. Optimize for latency and memory usage.",,,
+Designer,Lead UI/UX Designer,openclaw,openai,gpt-4o-mini,e2-medium,CEO,ui-ux-design,"# Designer Custom Rules
+Maintain strict color harmony (maximum 3 core colors). Conduct accessibility audits on all interfaces. Ensure mobile responsiveness.",,,

@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Local MongoDB — the control plane needs no MongoDB Atlas account to run locally.
+  # For a real deployment, point MONGODB_URI at your own MongoDB (Atlas or self-hosted).
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+
+  api:
+    build: .
+    ports:
+      - "8501:8501"
+    env_file:
+      - ./fastapp/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - ENV=dev
+      - LITELLM_PROXY_URL=http://litellm:4321
+    depends_on:
+      - mongo
+      - redis
+      - litellm
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    ports:
+      - "4321:4321"
+    environment:
+      # Set these in your own shell or a root .env file before `docker compose up`.
+      # Never commit real values here — see .env.template.
+      - GEMINI_API_KEY=${GEMINI_API_KEY:?set GEMINI_API_KEY in your environment (get a free key at aistudio.google.com)}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-local-dev}
+    command: ["--model", "gemini/gemini-3.5-flash", "--port", "4321"]
+
+  worker:
+    build: .
+    command: celery -A fastapp.celery_app worker --loglevel=info
+    env_file:
+      - ./fastapp/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - ENV=dev
+    depends_on:
+      - mongo
+      - redis
+
+  beat:
+    build: .
+    command: celery -A fastapp.celery_app beat --loglevel=info
+    env_file:
+      - ./fastapp/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - ENV=dev
+    depends_on:
+      - mongo
+      - redis
+
+volumes:
+  mongo_data:

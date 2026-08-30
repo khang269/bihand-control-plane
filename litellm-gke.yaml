@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minerclaw-litellm
+  namespace: minerclaw
+  labels:
+    service: minerclaw-litellm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: minerclaw-litellm
+  template:
+    metadata:
+      labels:
+        service: minerclaw-litellm
+    spec:
+      containers:
+      - name: litellm
+        image: ghcr.io/berriai/litellm:main-stable
+        args: ["--model", "gemini/gemini-3.5-flash", "--port", "1234"]
+        ports:
+        - containerPort: 1234
+          protocol: TCP
+        env:
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minerclaw-secrets
+              key: GOOGLE_API_KEY
+        - name: LITELLM_MASTER_KEY
+          value: sk-1234
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "1Gi"
+          limits:
+            cpu: "1000m"
+            memory: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: litellm-service
+  namespace: minerclaw
+spec:
+  selector:
+    service: minerclaw-litellm
+  ports:
+  - protocol: TCP
+    port: 1234
+    targetPort: 1234
+  type: ClusterIP

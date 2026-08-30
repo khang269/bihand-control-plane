@@ -1,0 +1,65 @@
+steps:
+  # Step 1: Build the API image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t',
+      '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_API_IMAGE_NAME}:${_VERSION}',
+      '-f',
+      'Dockerfile.api',
+      '.'
+    ]
+
+  # Step 2: Build the Worker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t',
+      '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_WORKER_IMAGE_NAME}:${_VERSION}',
+      '-f',
+      'Dockerfile.worker',
+      '.'
+    ]
+
+  # Step 3: Build the Beat image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t',
+      '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_BEAT_IMAGE_NAME}:${_VERSION}',
+      '-f',
+      'Dockerfile.beat',
+      '.'
+    ]
+
+  # Step 4: Build the LiteLLM sidecar image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t',
+      '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_LITELLM_IMAGE_NAME}:${_VERSION}',
+      '-f',
+      'Dockerfile.litellm',
+      '.'
+    ]
+
+# Images built above are pushed to Artifact Registry on a successful build.
+images:
+  - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_API_IMAGE_NAME}:${_VERSION}'
+  - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_WORKER_IMAGE_NAME}:${_VERSION}'
+  - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_BEAT_IMAGE_NAME}:${_VERSION}'
+  - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_LITELLM_IMAGE_NAME}:${_VERSION}'
+
+# Substitution variables — override at build time with your own project/registry.
+# No project ID or registry path defaults to a maintainer-owned resource.
+substitutions:
+  _LOCATION: 'us-central1'
+  _REPOSITORY: 'bihand'
+  _API_IMAGE_NAME: 'bihand-api'
+  _WORKER_IMAGE_NAME: 'bihand-worker'
+  _BEAT_IMAGE_NAME: 'bihand-beat'
+  _LITELLM_IMAGE_NAME: 'bihand-litellm'
+  _VERSION: 'v1'
+
+options:
+  machineType: 'E2_HIGHCPU_8'

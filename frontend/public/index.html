@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bihand | AI Company Control Plane</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+    
+    <!-- Tailwind CSS (CDN for POC) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                fontFamily: {
+                    sans: ['Inter', 'sans-serif'],
+                },
+                extend: {
+                    colors: {
+                        background: '#09090b', /* Zinc 950 */
+                        foreground: '#fafafa',
+                        muted: '#a1a1aa',
+                        border: '#27272a', /* Zinc 800 */
+                        card: '#09090b',
+                        'card-foreground': '#fafafa',
+                        primary: '#fafafa',
+                        'primary-foreground': '#18181b',
+                        secondary: '#27272a',
+                        'secondary-foreground': '#fafafa',
+                        accent: '#27272a',
+                        destructive: '#7f1d1d',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Remix Icons (Alternative to Lucide for now) -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #09090b;
+            color: #fafafa;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .view { display: none; }
+        .active-view { display: flex; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            color: theme('colors.muted');
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+            width: 100%;
+        }
+        .nav-item:hover {
+            background-color: theme('colors.secondary');
+            color: theme('colors.foreground');
+        }
+        .nav-item.active {
+            background-color: theme('colors.secondary');
+            color: theme('colors.foreground');
+            font-weight: 600;
+        }
+        
+        .input-field {
+            width: 100%;
+            background-color: transparent;
+            border: 1px solid theme('colors.border');
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            color: theme('colors.foreground');
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            border-color: theme('colors.muted');
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: theme('colors.primary');
+            color: theme('colors.primary-foreground');
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid theme('colors.border');
+            color: theme('colors.foreground');
+        }
+        .btn-outline:hover {
+            background-color: theme('colors.secondary');
+        }
+    </style>
+    
+    <!-- Google OAuth Script -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="h-screen w-screen overflow-hidden">
+    
+    <div id="app" class="h-full w-full">
+        
+        <!-- Auth View -->
+        <div id="auth-view" class="view active-view h-full w-full flex-col items-center justify-center relative">
+            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiMzZjNmNDYiLz48L3N2Zz4=')] opacity-20"></div>
+            
+            <div class="z-10 flex flex-col items-center max-w-md w-full px-6">
+                <div class="flex items-center gap-2 mb-8">
+                    <i class="ri-attachment-line text-3xl"></i>
+                    <span class="text-3xl font-bold tracking-tight">Bihand</span>
+                </div>
+                
+                <div class="w-full bg-[#09090b] border border-border rounded-xl p-8 shadow-2xl">
+                    <h2 class="text-xl font-semibold mb-2">Welcome back</h2>
+                    <p class="text-muted text-sm mb-6">Sign in to manage your autonomous AI companies.</p>
+                    
+                    <div id="g_id_onload"
+                        data-client_id="811295394115-rlf39tmn67sori5f5m5tv9cg2978g5la.apps.googleusercontent.com"
+                        data-context="signin"
+                        data-ux_mode="popup"
+                        data-callback="handleCredentialResponse"
+                        data-auto_prompt="false">
+                    </div>
+                    <div class="g_id_signin flex justify-center w-full" data-type="standard" data-shape="rectangular" data-theme="filled_black" data-text="signin_with" data-size="large" data-logo_alignment="left"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard View -->
+        <div id="main-view" class="view h-full w-full flex">
+            
+            <!-- Sidebar -->
+            <aside class="w-64 border-r border-border bg-[#09090b] flex flex-col h-full flex-shrink-0">
+                
+                <!-- Company Switcher -->
+                <div class="p-4 border-b border-border">
+                    <div class="flex items-center gap-2 px-2 py-1.5 hover:bg-secondary rounded-md cursor-pointer transition-colors" onclick="document.getElementById('fleet-dropdown').classList.toggle('hidden')">
+                        <div class="w-6 h-6 rounded bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs">
+                            <i class="ri-building-4-line"></i>
+                        </div>
+                        <div class="flex-1 overflow-hidden">
+                            <div id="active-fleet-name" class="text-sm font-semibold truncate">Select a Company</div>
+                        </div>
+                        <i class="ri-expand-up-down-line text-muted text-xs"></i>
+                    </div>
+                    
+                    <!-- Dropdown -->
+                    <div id="fleet-dropdown" class="hidden absolute top-14 left-4 w-56 bg-[#09090b] border border-border rounded-md shadow-xl z-50 py-1">
+                        <div class="px-3 py-2 text-xs font-semibold text-muted uppercase tracking-wider">Your Companies</div>
+                        <div id="fleet-dropdown-list">
+                            <!-- Fleets injected here -->
+                        </div>
+                        <div class="border-t border-border mt-1 pt-1">
+                            <button class="w-full text-left px-3 py-2 text-sm hover:bg-secondary flex items-center gap-2 text-muted hover:text-foreground transition-colors" data-target="user-wizard" onclick="app.navigateTo('/wizard'); document.getElementById('fleet-dropdown').classList.add('hidden');">
+                                <i class="ri-add-line"></i> Incorporate New
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Navigation -->
+                <div class="flex-1 overflow-y-auto p-3 space-y-6">
+                    <div>
+                        <div class="px-3 mb-2 text-xs font-semibold text-muted uppercase tracking-wider">Workspace</div>
+                        <nav class="space-y-1">
+                            <button class="nav-item active" data-target="user-dashboard">
+                                <i class="ri-dashboard-line text-lg"></i> Overview
+                            </button>
+                            <button class="nav-item" data-target="org-chart">
+                                <i class="ri-team-line text-lg"></i> Org Chart
+                            </button>
+                            <button class="nav-item" data-target="user-billing">
+                                <i class="ri-bank-card-line text-lg"></i> Billing
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+                
+                <!-- User Profile -->
+                <div class="p-4 border-t border-border">
+                    <div class="flex items-center gap-3">
+                        <img id="sidebar-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full bg-secondary">
+                        <div class="flex-1 overflow-hidden">
+                            <div id="sidebar-name" class="text-sm font-medium truncate">User</div>
+                            <div id="sidebar-email" class="text-xs text-muted truncate">user@bihand.com</div>
+                        </div>
+                        <button id="btn-logout" class="text-muted hover:text-foreground p-1 rounded-md hover:bg-secondary transition-colors" title="Log out">
+                            <i class="ri-logout-box-r-line"></i>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- Main Content Area -->
+            <main class="flex-1 flex flex-col h-full bg-[#09090b] overflow-hidden">
+                
+                <!-- Topbar -->
+                <header class="h-14 border-b border-border flex items-center justify-between px-6 flex-shrink-0">
+                    <div class="flex items-center gap-2 text-sm text-muted">
+                        <span id="breadcrumb-company">Bihand</span>
+                        <i class="ri-arrow-right-s-line"></i>
+                        <span id="breadcrumb-page" class="text-foreground font-medium">Overview</span>
+                    </div>
+                </header>
+                
+                <!-- Content Sections -->
+                <div class="flex-1 overflow-y-auto p-8">
+                    <div class="max-w-5xl mx-auto w-full">
+                        
+                        <!-- Dashboard / Overview -->
+                        <section id="user-dashboard" class="content-section active">
+                            <div class="flex items-center justify-between mb-6">
+                                <h1 class="text-2xl font-semibold tracking-tight">Company Overview</h1>
+                                <a id="btn-bihand-hq" href="#" target="_blank" class="btn btn-outline hidden">
+                                    <i class="ri-external-link-line"></i> Open Bihand HQ
+                                </a>
+                            </div>
+                            
+                            <div id="dashboard-empty-state" class="hidden border border-dashed border-border rounded-xl p-12 text-center">
+                                <div class="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4 text-muted">
+                                    <i class="ri-building-4-line text-xl"></i>
+                                </div>
+                                <h3 class="text-lg font-medium mb-2">No Company Selected</h3>
+                                <p class="text-muted text-sm mb-6 max-w-sm mx-auto">Select a company from the top left dropdown, or incorporate a new one to start your autonomous agent fleet.</p>
+                                <button class="btn btn-primary" onclick="app.navigateTo('/wizard')">Incorporate Company</button>
+                            </div>
+                            
+                            <div id="dashboard-content" class="hidden">
+                                <!-- Stats Grid -->
+                                <div class="grid grid-cols-3 gap-4 mb-8">
+                                    <div class="border border-border rounded-lg p-4 bg-card">
+                                        <div class="text-sm font-medium text-muted mb-1">Fleet Status</div>
+                                        <div id="stat-status" class="text-2xl font-bold flex items-center gap-2">
+                                            <span class="w-3 h-3 rounded-full bg-emerald-500"></span> Running
+                                        </div>
+                                    </div>
+                                    <div class="border border-border rounded-lg p-4 bg-card">
+                                        <div class="text-sm font-medium text-muted mb-1">Monthly Burn</div>
+                                        <div id="stat-cost" class="text-2xl font-bold">$0</div>
+                                    </div>
+                                    <div class="border border-border rounded-lg p-4 bg-card">
+                                        <div class="text-sm font-medium text-muted mb-1">Active Agents</div>
+                                        <div id="stat-agents" class="text-2xl font-bold">0</div>
+                                    </div>
+                                </div>
+                                
+                                <h2 class="text-lg font-semibold mb-4">Recent Activity</h2>
+                                <div class="border border-border rounded-lg overflow-hidden">
+                                    <div class="p-8 text-center text-muted text-sm">
+                                        Activity logs will appear here once agents begin executing heartbeats.
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Org Chart -->
+                        <section id="org-chart" class="content-section">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h1 class="text-2xl font-semibold tracking-tight">Organization Chart</h1>
+                                    <p class="text-muted text-sm mt-1">Manage your autonomous employees and their runtimes.</p>
+                                </div>
+                            </div>
+                            
+                            <div id="org-chart-container" class="space-y-4">
+                                <!-- Agents injected here -->
+                            </div>
+                        </section>
+
+                        <!-- Incorporate Wizard -->
+                        <section id="user-wizard" class="content-section">
+                            <div class="mb-8">
+                                <h1 class="text-2xl font-semibold tracking-tight">Incorporate AI Company</h1>
+                                <p class="text-muted text-sm mt-1">Deploy a fleet of autonomous agents orchestrated by Bihand.</p>
+                            </div>
+                            
+                            <div class="border border-border rounded-xl p-6 bg-card">
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Company Name</label>
+                                        <input type="text" id="fleet-name" class="input-field" placeholder="e.g. Acme AI Corp">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium mb-3">Select Infrastructure Plan</label>
+                                        <div class="grid grid-cols-3 gap-4">
+                                            <div class="plan-card border-2 border-muted/20 hover:border-muted rounded-lg p-4 cursor-pointer transition-all" data-plan="starter" onclick="app.fleet.selectPlan('starter')">
+                                                <div class="font-semibold mb-1">Starter</div>
+                                                <div class="text-xs text-muted mb-3 h-8">1 Agent (CEO) + Bihand SaaS Control Plane</div>
+                                                <div class="text-2xl font-bold">$50<span class="text-sm font-normal text-muted">/mo</span></div>
+                                            </div>
+                                            <div class="plan-card border-2 border-muted/20 hover:border-muted rounded-lg p-4 cursor-pointer transition-all" data-plan="medium" onclick="app.fleet.selectPlan('medium')">
+                                                <div class="font-semibold text-primary mb-1">Medium</div>
+                                                <div class="text-xs text-muted mb-3 h-8">2 Agents (CEO + CTO)</div>
+                                                <div class="text-2xl font-bold">$100<span class="text-sm font-normal text-muted">/mo</span></div>
+                                            </div>
+                                            <div class="plan-card border-2 border-muted/20 hover:border-muted rounded-lg p-4 cursor-pointer transition-all" data-plan="custom" onclick="app.fleet.selectPlan('custom')">
+                                                <div class="font-semibold mb-1">Custom</div>
+                                                <div class="text-xs text-muted mb-3 h-8">Build your own Org Chart</div>
+                                                <div class="text-2xl font-bold">$50<span class="text-sm font-normal text-muted">/agent</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="fleet-configuration-area" class="border border-border rounded-lg p-5 bg-[#09090b]">
+                                        <h3 class="text-sm font-medium mb-4 uppercase tracking-wider text-muted">Org Chart Setup</h3>
+                                        <div id="predefined-fleet-section" class="space-y-4"></div>
+                                        <div id="custom-fleet-section" style="display: none;" class="space-y-4">
+                                            <div id="custom-agents-container" class="space-y-4"></div>
+                                            <button class="w-full py-3 border border-dashed border-border rounded-lg text-sm text-muted hover:text-foreground hover:border-muted transition-colors flex items-center justify-center gap-2" onclick="app.fleet.addAgent()">
+                                                <i class="ri-add-line"></i> Hire New Agent
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Master Secrets Password</label>
+                                        <input type="password" id="fleet-password" class="input-field" placeholder="Used for NoVNC Virtual Screen and Agent Encryption">
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-8 pt-6 border-t border-border flex items-center justify-between">
+                                    <div>
+                                        <div class="text-sm text-muted">Monthly Total</div>
+                                        <div id="fleet-price-display" class="text-2xl font-bold">$50/mo</div>
+                                    </div>
+                                    <button id="btn-deploy-fleet" class="btn btn-primary px-6" onclick="app.fleet.deploy()">
+                                        Provision Fleet
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+                        
+                        <!-- Billing -->
+                        <section id="user-billing" class="content-section">
+                            <div class="mb-8">
+                                <h1 class="text-2xl font-semibold tracking-tight">Billing & Usage</h1>
+                                <p class="text-muted text-sm mt-1">Manage your account balance and payment methods.</p>
+                            </div>
+                            
+                            <div class="border border-border rounded-xl p-8 bg-card flex justify-between items-center mb-8">
+                                <div>
+                                    <div class="text-sm font-medium text-muted uppercase tracking-wider mb-2">Account Balance</div>
+                                    <div class="text-4xl font-bold tracking-tight">
+                                        <span id="user-credits-display">--</span> <span class="text-lg text-muted font-normal">Credits</span>
+                                    </div>
+                                </div>
+                                <i class="ri-bank-card-line text-6xl text-muted opacity-20"></i>
+                            </div>
+                            
+                            <h3 class="text-lg font-semibold mb-4">Add Credits</h3>
+                            <div class="grid grid-cols-3 gap-6">
+                                <div class="border border-border rounded-lg p-6 hover:border-muted transition-colors cursor-pointer text-center" onclick="app.checkout('starter')">
+                                    <div class="text-sm font-medium text-muted mb-2">STARTER</div>
+                                    <div class="text-3xl font-bold mb-4">$25</div>
+                                    <div class="text-sm text-muted mb-6">30 Credits</div>
+                                    <button class="btn btn-outline w-full">Buy Now</button>
+                                </div>
+                                <div class="border border-border rounded-lg p-6 hover:border-muted transition-colors cursor-pointer text-center relative" onclick="app.checkout('pro')">
+                                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] font-bold px-3 py-1 rounded-full uppercase">Popular</div>
+                                    <div class="text-sm font-medium text-foreground mb-2">PRO</div>
+                                    <div class="text-3xl font-bold mb-4">$90</div>
+                                    <div class="text-sm text-muted mb-6">120 Credits</div>
+                                    <button class="btn btn-primary w-full text-background bg-foreground hover:bg-muted">Buy Now</button>
+                                </div>
+                                <div class="border border-border rounded-lg p-6 hover:border-muted transition-colors cursor-pointer text-center" onclick="app.checkout('enterprise')">
+                                    <div class="text-sm font-medium text-muted mb-2">ENTERPRISE</div>
+                                    <div class="text-3xl font-bold mb-4">$250</div>
+                                    <div class="text-sm text-muted mb-6">360 Credits</div>
+                                    <button class="btn btn-outline w-full">Buy Now</button>
+                                </div>
+                            </div>
+                        </section>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <script src="/js/fleet.js"></script>
+    <script src="/js/main.js"></script>
+</body>
+</html>

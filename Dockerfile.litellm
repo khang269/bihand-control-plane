@@ -1,0 +1,4 @@
+FROM ghcr.io/berriai/litellm:main-stable
+ENV GEMINI_API_KEY=placeholder
+ENV LITELLM_MASTER_KEY=placeholder
+EXPOSE 4321
