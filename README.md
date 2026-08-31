@@ -6,6 +6,21 @@
 
 ---
 
+## Screenshots
+
+Captured on this repo's own live deployment against a real fleet — two Codex agents
+(CEO → Engineer) on the Bihand Provider, real GCP VMs, real autonomous delegation.
+Nothing below is a mockup. Full set with captions in
+[`docs/screenshots/`](./docs/screenshots/README.md).
+
+| | |
+|---|---|
+| ![Codex + Bihand Provider](./docs/screenshots/02-wizard-codex-bihand-provider.png) Deploy wizard — Codex runtime, Bihand Provider (no key needed) | ![Org chart hierarchy](./docs/screenshots/03-wizard-org-chart-hierarchy.png) Org chart — Board → CEO → Engineer |
+| ![Live provisioning](./docs/screenshots/07-org-chart-provisioning.png) Fleet control plane — real GCP VM states, live | ![Autonomous delegation](./docs/screenshots/11-live-task-delegation.png) CEO agent autonomously delegating to the Engineer |
+| ![Delegation pipeline detail](./docs/screenshots/12-delegation-pipeline-detail.png) Task detail — the delegation pipeline and full subtask spec | ![Live activity audit trail](./docs/screenshots/13-live-activity-audit-trail.png) Live audit trail — the actual `delegate` M2M tool call |
+
+---
+
 ## Enterprise-fleet security model
 
 Bihand is built for institutional use: a scalable network of agents that are cataloged for cross-department use, that safely maintain context across weeks of asynchronous operation, and that touch production data without violating enterprise security or compliance. That's not a bolt-on — it's the core data model:
