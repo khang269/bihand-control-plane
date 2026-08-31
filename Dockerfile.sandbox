@@ -1,0 +1,47 @@
+# Trading Studio sandbox — runs LLM-generated strategy code in Cloud Run.
+# Holds no server credential: LLM calls and results go back through the Bihand
+# API authenticated by a per-task token.
+#
+# Vibe-Trading's own backtest engine (backtest/runner.py) executes the agent-
+# written signal_engine.py as a subprocess and drops privileges to a
+# "vibe-sandbox" system user WHEN that account exists (src/core/runner.py's
+# _resolve_sandbox_credentials) — this container deliberately does NOT create
+# it. write_file/backtest share one run_dir tree across two process contexts
+# (the main agent process writes config.json/signal_engine.py; the backtest
+# subprocess writes artifacts/), so a UID drop here would need every directory
+# in that tree pre-owned/chmod'd for the dropped user too — half-replicating
+# their hardened image's exact permission scheme without the rest of it just
+# breaks writes (verified: PermissionError on every backtest run). Their own
+# code treats the absence of vibe-sandbox as the normal, safe default for any
+# environment outside that exact recipe ("bare pip install, local dev, CI...
+# degrade to the previous behaviour with a WARNING") — the AST-level
+# SignalEngine scrubber in backtest/runner.py is the primary defense and stays
+# fully active either way.
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir \
+      "pandas>=2.2,<4" \
+      "numpy>=1.26,<3" \
+      "yfinance>=0.2,<1" \
+      "requests>=2.31,<3" \
+      "ddgs>=6,<10" \
+      "lxml>=5,<6" \
+      "scipy>=1.11,<2" \
+      "pydantic>=2.6,<3" \
+      "rich>=13,<15" \
+      "pyyaml>=6,<7" \
+      "defusedxml>=0.7,<1" \
+      "ccxt>=4,<5"
+
+COPY sandbox/ /app/sandbox/
+COPY src/ /app/src/
+COPY backtest/ /app/backtest/
+
+# Runs as root: the process creates run_dir scratch files under /app/runs and
+# the backtest subprocess writes artifacts into that same tree.
+ENTRYPOINT ["python", "-m", "sandbox.main"]

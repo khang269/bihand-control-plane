@@ -24,9 +24,9 @@ Bihand is built for institutional use: a scalable network of agents that are cat
 
 ## Google Cloud & Gemini integration
 
-- **Gemini** — the built-in LLM billing proxy (`fastapp/controllers/llmController.py`) force-maps every request to **`gemini-3.5-flash`** via the Gemini API; the Architecture Studio and Film Studio verticals call Gemini image/video models (`gemini-2.5-flash-image`, `veo-3.1-*`) directly.
+- **Gemini** — the built-in LLM billing proxy (`fastapp/controllers/llmController.py`) force-maps every request to **`gemini-3.5-flash`** via the Gemini API; the Architecture Studio and Film Studio verticals call Gemini image/video models (`gemini-2.5-flash-image`, `veo-3.1-*`) directly, and Trading Studio's sandboxed agent calls Gemini for structured generation and tool-calling chat through its own metered proxy endpoints (`fastapp/controllers/sandboxController.py`).
 - **Google GenAI SDK** — `google-genai` (the official Python GenAI SDK, `from google import genai`) is used throughout `fastapp/services/generationService.py`, `fastapp/utils/utils.py`, and `fastapp/tasks.py` for both the Gemini API and Vertex AI code paths.
-- **Google Cloud infrastructure** — deployed as four containers on **GKE** (Uvicorn API, Celery worker, Celery beat, LiteLLM sidecar — see `cloudbuild.yaml`, `Dockerfile.api/.worker/.beat/.litellm`), built via **Cloud Build** and pushed to **Artifact Registry**; agent workloads themselves run as isolated **Compute Engine** VMs (`fastapp/services/gcpService.py`).
+- **Google Cloud infrastructure** — deployed as four containers on **GKE** (Uvicorn API, Celery worker, Celery beat, LiteLLM sidecar — see `cloudbuild.yaml`, `Dockerfile.api/.worker/.beat/.litellm`), built via **Cloud Build** and pushed to **Artifact Registry**; agent workloads themselves run as isolated **Compute Engine** VMs (`fastapp/services/gcpService.py`). A fifth image, `Dockerfile.sandbox`, runs LLM-generated Trading Studio strategies on a zero-IAM-role **Cloud Run Job** instead of GKE — see ARCHITECTURE.md's security model.
 
 ---
 
@@ -130,6 +130,8 @@ cd frontend && npm run lint && npm run build   # tsc -b && vite build -> fronten
 
 **Customer support pipeline** (`channelWebhookController`): inbound Messenger/Zalo messages hit a public, signature-verified webhook, get attached to a durable `Conversation`/`CustomerProfile` record, and are debounced into an agent-drafted (or auto-sent, per flow policy) reply — a second, independent example of the same "agent acts asynchronously on durable state" pattern, applied to real-time customer messages instead of task-board tickets.
 
+**Trading Studio** (`tradingStudioController` + `sandboxController`): a free-text prompt ("backtest a MACD crossover on Tesla") becomes a task dispatched to a Cloud Run Job with no server credential of its own. The job runs the whole agent flow — interpret the prompt, fetch market data, generate and execute a `signal_engine.py`, analyse the result — and calls back into two token-authenticated endpoints for every LLM call and the final artifacts. A third, more adversarial example of the same durable-task pattern: here the "agent" is untrusted code the LLM itself wrote.
+
 **Security**: CSFLE for every stored provider key/OAuth token; per-agent M2M tokens instead of shared credentials; short-lived Google OAuth token minting so refresh tokens never reach agent-VM disk; a config-driven (not hardcoded) admin allowlist.
 
 ---
@@ -145,10 +147,13 @@ fastapp/
   utils/           mcp_normalizer, jwtUtils, adminAuth, socialUtils, systemPrompt
   migrations/      Declarative, lock-gated schema/VM migration runner
 frontend/
-  src/pages/       Dashboard, fleet workspace, Architecture/Film Studio, admin, login/register
-  src/components/  Layout, org chart, landing page
+  src/pages/       Dashboard, fleet workspace, Architecture/Film/Trading Studio, admin, login/register
+  src/components/  Layout, org chart, landing page, trading charts
 docker-compose.test.yml   Local dev stack: mongo, redis, litellm, api, worker, beat
-Dockerfile.api / .worker / .beat / .litellm   The four images actually deployed to GKE
+Dockerfile.api / .worker / .beat / .litellm   The four images deployed to GKE
+Dockerfile.sandbox        Trading Studio's LLM-code sandbox — a Cloud Run Job, not GKE
+sandbox/, src/, backtest/ The sandboxed agent + backtest engine (vendored/adapted from
+                          Vibe-Trading, MIT) that Dockerfile.sandbox packages
 cloudbuild.yaml           Cloud Build pipeline → Artifact Registry
 deploy/k8s/               GKE manifests (namespace, config/secret, redis, litellm, api, worker, beat, ingress)
 DEPLOYMENT.md             Full deployment guide — local and GKE, including GCP IAM/firewall setup + troubleshooting
@@ -160,7 +165,7 @@ ROADMAP.md                Maintainer's plan for a fuller community open-source r
 
 ## What's intentionally left out of this release
 
-This is a slimmed-down copy of a larger private codebase. Removed for this release (not because they're broken, but because they're out of scope, add friction a self-hoster shouldn't have to deal with, and/or depend on infrastructure not included here): the Trading Studio vertical (needed a separate Cloud Run sandbox image not included), all Stripe/credit-purchase billing (the credit *system* itself is also disabled — see below), the 3D avatar / sticker-service integration (an external microservice this repo doesn't include — see [`ROADMAP.md`](./ROADMAP.md)), and the vendored quant-trading engine the private repo also contains. Real, working credentials, a live API key, an admin-email backdoor, and a default OAuth client ID that existed in the private repo have all been removed or replaced with operator-configured environment variables — see the git history of this repo for the (single, clean) commit this was prepared in.
+This is a slimmed-down copy of a larger private codebase. Removed for this release (not because they're broken, but because they're out of scope, add friction a self-hoster shouldn't have to deal with, and/or depend on infrastructure not included here): all Stripe/credit-purchase billing (the credit *system* itself is also disabled — see below) and the 3D avatar / sticker-service integration (an external microservice this repo doesn't include — see [`ROADMAP.md`](./ROADMAP.md)). Real, working credentials, a live API key, an admin-email backdoor, and a default OAuth client ID that existed in the private repo have all been removed or replaced with operator-configured environment variables — see the git history of this repo for the (single, clean) commit this was prepared in.
 
 Generic GKE manifests *are* included this time (`deploy/k8s/`, see [`DEPLOYMENT.md`](./DEPLOYMENT.md)) — the private repo's own Kubernetes manifests aren't (those reference infra specific to that deployment), but this snapshot ships adapt-and-apply ones instead of leaving self-hosters to write their own from scratch.
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Building2, PlusCircle, LayoutDashboard, LogOut, ChevronDown, ChevronRight, Inbox, CircleDot, Repeat, Target, Bot, Network, DollarSign, Lock, Activity, Settings as SettingsIcon, Video } from 'lucide-react';
+import { Building2, PlusCircle, LayoutDashboard, LogOut, ChevronDown, ChevronRight, Inbox, CircleDot, Repeat, Target, Bot, Network, DollarSign, Lock, Activity, Settings as SettingsIcon, Video, TrendingUp } from 'lucide-react';
 import api from '../lib/api';
 import { cn } from '../lib/cn';
 import { IconBadge } from './ui/IconBadge';
@@ -38,7 +38,7 @@ const Layout: React.FC = () => {
   const pathParts = location.pathname.split('/');
   const isFleetContext = pathParts[1] === 'fleet' && pathParts.length >= 3;
   // Pages that manage their own chrome and need the full content area (no padding/max-width).
-  const isFullBleed = false;
+  const isFullBleed = pathParts[1] === 'trading-studio';
   const activeFleetId = isFleetContext ? pathParts[2] : null;
 
   useEffect(() => {
@@ -227,6 +227,9 @@ const Layout: React.FC = () => {
                 </Link>
                 <Link to="/film-studio" className={navLinkClass(location.pathname === '/film-studio')}>
                   <Video size={16} /> {t('nav.film_studio')}
+                </Link>
+                <Link to="/trading-studio" className={navLinkClass(location.pathname === '/trading-studio')}>
+                  <TrendingUp size={16} /> {t('nav.trading_studio')}
                 </Link>
                 <Link to="/wizard" className={navLinkClass(location.pathname === '/wizard')}>
                   <PlusCircle size={16} /> {t('nav.incorporate_new')}

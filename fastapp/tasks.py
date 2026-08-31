@@ -2408,3 +2408,108 @@ def setup_personal_channel_sync_task(instance_id: str):
         logger.info(f"channel_sync.py installed/restarted for instance {instance_id} ({len(channels)} channel(s))")
     else:
         logger.error(f"Failed to install channel_sync.py for instance {instance_id}")
+
+
+# --- Trading Studio ---
+
+@celery_app.task(name="fastapp.tasks.execute_trading_prediction_task")
+def execute_trading_prediction_task(task_id: str):
+    """
+    Dispatch a Trading Studio run to the Cloud Run sandbox.
+
+    The whole agent flow (interpret, fetch data, generate + execute the strategy,
+    analyse) runs in the job. This worker only mints the per-task token, starts
+    the execution, and returns — it holds the thread for ~1s instead of ~30s, and
+    generated code never runs next to our cloud identity.
+
+    Terminal state arrives via POST /api/internal/sandbox/result. Runs that never
+    call back are swept by reconcile_trading_tasks_task.
+    """
+    from datetime import datetime, timezone
+    from fastapp.database import get_db
+    from fastapp.services.cloudRunJobs import start_sandbox_execution
+    from fastapp.utils.sandboxKey import (
+        DEFAULT_BUDGET_CREDITS, generate_sandbox_key, hash_sandbox_key, key_expiry,
+    )
+
+    db = get_db()
+    task = db["trading_predictions"].find_one({"_id": task_id})
+    if not task:
+        logger.error(f"[Trading Task {task_id}] not found in database.")
+        return
+    if task.get("status") in ("COMPLETED", "FAILED"):
+        logger.info(f"[Trading Task {task_id}] already terminal; not dispatching.")
+        return
+
+    prompt = task.get("prompt") or ""
+    api_base = os.environ.get("BIHAND_PUBLIC_API_URL", "http://localhost:8501")
+
+    key = generate_sandbox_key()
+    db["trading_predictions"].update_one(
+        {"_id": task_id},
+        {"$set": {
+            "status": "PROCESSING",
+            "steps": [],
+            "sandboxKeyHash": hash_sandbox_key(key),
+            "sandboxKeyExpiresAt": key_expiry(),
+            "budgetCredits": DEFAULT_BUDGET_CREDITS,
+            "billing": {"inputTokens": 0, "outputTokens": 0, "llmCalls": 0,
+                        "costUsd": 0.0, "chargedCredits": 0.0},
+            "updatedAt": datetime.now(timezone.utc),
+        }},
+    )
+
+    try:
+        op = start_sandbox_execution(task_id, key, prompt, api_base)
+        db["trading_predictions"].update_one(
+            {"_id": task_id},
+            {"$set": {"sandboxExecution": (op or {}).get("name"),
+                      "updatedAt": datetime.now(timezone.utc)}},
+        )
+        logger.info(f"[Trading Task {task_id}] dispatched to the sandbox job.")
+    except Exception as exc:
+        logger.error(f"[Trading Task {task_id}] dispatch failed: {exc}")
+        # Billing is per LLM call and nothing ran, so the user was never charged.
+        db["trading_predictions"].update_one(
+            {"_id": task_id},
+            {"$set": {"status": "FAILED",
+                      "failureReason": "Could not start the analysis sandbox.",
+                      "updatedAt": datetime.now(timezone.utc)},
+             "$unset": {"sandboxKeyHash": ""}},
+        )
+
+
+@celery_app.task(name="fastapp.tasks.reconcile_trading_tasks_task")
+def reconcile_trading_tasks_task():
+    """
+    Fail Trading Studio runs whose sandbox never reported back.
+
+    A job can die without delivering a result (OOM, platform error, timeout). The
+    per-task key expiry is the deadline: past it, no callback can be accepted, so
+    the task is terminal by definition.
+    """
+    from datetime import datetime, timezone
+    from fastapp.database import get_db
+
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    stale = list(db["trading_predictions"].find({
+        "status": {"$in": ["PENDING", "PROCESSING"]},
+        "sandboxKeyExpiresAt": {"$lt": now},
+    }).limit(100))
+
+    for task in stale:
+        task_id = task["_id"]
+        # Nothing to refund: charges happen per LLM call and those calls were
+        # really made. The budget cap bounds what a runaway task can spend.
+        db["trading_predictions"].update_one(
+            {"_id": task_id},
+            {"$set": {"status": "FAILED",
+                      "failureReason": "The analysis sandbox did not report back in time.",
+                      "updatedAt": now},
+             "$unset": {"sandboxKeyHash": ""}},
+        )
+        logger.warning(f"[Trading Task {task_id}] swept as stale (sandbox never reported).")
+
+    if stale:
+        logger.info(f"reconcile_trading_tasks_task: swept {len(stale)} stale run(s).")

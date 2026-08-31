@@ -24,6 +24,8 @@ from fastapp.controllers.architectureController import architectureRouter
 from fastapp.controllers.filmStudioController import filmStudioRouter
 from fastapp.controllers.llmController import llmRouter
 from fastapp.controllers.channelWebhookController import channelWebhookRouter
+from fastapp.controllers.tradingStudioController import tradingStudioRouter
+from fastapp.controllers.sandboxController import sandboxRouter
 from fastapp.utils.errorHandler import register_error_handlers
 from fastapp.utils.logger import setup_logging
 from fastapp.database import init_db
@@ -107,6 +109,8 @@ app.include_router(hermesRouter, prefix="/api")
 app.include_router(architectureRouter, prefix="/api/architecture")
 app.include_router(filmStudioRouter, prefix="/api/film-studio")
 app.include_router(llmRouter, prefix="/api/llm")
+app.include_router(tradingStudioRouter, prefix="/api/trading-studio")
+app.include_router(sandboxRouter, prefix="/api/internal")
 
 # --- Mount the static files ---
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "frontend/dist")

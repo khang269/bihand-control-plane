@@ -15,6 +15,7 @@ import Admin from './pages/Admin';
 import FleetDashboard from './pages/fleet/FleetDashboard';
 import ArchitectureStudio from './pages/ArchitectureStudio';
 import FilmStudio from './pages/FilmStudio';
+import TradingStudio from './pages/TradingStudio';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { token, isLoading } = useAuth();
@@ -37,6 +38,7 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/architecture-studio" element={<ArchitectureStudio />} />
         <Route path="/film-studio" element={<FilmStudio />} />
+        <Route path="/trading-studio" element={<TradingStudio />} />
         <Route path="/wizard" element={<Incorporate />} />
         <Route path="/credentials" element={<Credentials />} />
         

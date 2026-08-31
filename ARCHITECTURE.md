@@ -93,19 +93,22 @@ an internal task board.
 ```mermaid
 flowchart LR
     Dev["git push"] --> CB["Cloud Build<br/>cloudbuild.yaml"]
-    CB --> AR["Artifact Registry<br/>bihand-api / -worker / -beat / -litellm"]
+    CB --> AR["Artifact Registry<br/>bihand-api / -worker / -beat / -litellm / -sandbox"]
     AR --> GKE1["GKE namespace: minerclaw-test"]
     AR -->|"explicit prod approval"| GKE2["GKE namespace: minerclaw"]
+    AR --> CRJ["Cloud Run Job<br/>bihand-trading-sandbox<br/>(zero-IAM-role SA)"]
     GKE1 --> Atlas1[("MongoDB Atlas")]
     GKE2 --> Atlas2[("MongoDB Atlas")]
+    CRJ -->|"per-task token, no DB/GCP creds"| GKE1
 ```
 
-One repo, four Dockerfiles (`Dockerfile.api`, `.worker`, `.beat`, `.litellm`), one
-`cloudbuild.yaml` that builds and pushes all four on every deploy. Locally, the same
-four processes run from a single `docker-compose.test.yml` (plus a bundled `mongo`
-and `redis` container, so local dev needs no cloud account at all) — the only thing
-that changes between "run it on my laptop" and "run it on GKE" is where `MONGODB_URI`
-and `REDIS_URL` point.
+One repo, five Dockerfiles (`Dockerfile.api`, `.worker`, `.beat`, `.litellm`,
+`.sandbox`), one `cloudbuild.yaml` that builds and pushes all five on every deploy.
+Locally, the four API/worker/beat/litellm processes run from a single
+`docker-compose.test.yml` (plus a bundled `mongo` and `redis` container, so local dev
+needs no cloud account at all) — the only thing that changes between "run it on my
+laptop" and "run it on GKE" is where `MONGODB_URI` and `REDIS_URL` point. The fifth
+image, `Dockerfile.sandbox`, doesn't run in GKE at all — see below.
 
 ## Security model at a glance
 
@@ -123,3 +126,20 @@ and `REDIS_URL` point.
   the encrypted database and never touches agent-VM disk.
 - **Config-driven admin, not a code-level backdoor**: the admin allowlist is `ADMIN_USER`
   from the environment — nothing is hardcoded into the source.
+- **LLM-generated code never runs next to a real credential**: Trading Studio's agent
+  writes and executes its own backtest strategies, so that code has to be treated as
+  hostile. The whole agent flow (interpret prompt, fetch market data, generate +
+  run the strategy, analyse) runs inside a separate `Dockerfile.sandbox` container on
+  a **Cloud Run Job whose service account is deliberately granted no IAM roles at
+  all** — not scoped-down, granted nothing. It holds no `MONGODB_URI`, no
+  `GEMINI_API_KEY`, no GCP credential of any kind; it only gets a random per-task
+  token (`fastapp/utils/sandboxKey.py` — hashed at rest, single-use, expires with the
+  job). Every LLM call and the final result cross back into the trusted API through
+  two callback endpoints (`fastapp/controllers/sandboxController.py`,
+  `/api/internal/sandbox/{llm,chat,result}`) that authenticate by that token alone and
+  treat the request body as attacker-controlled input (strict schema, numeric
+  coercion, size caps, HTML stripped before display). Inside the sandbox, the
+  generated `signal_engine.py` itself is further sandboxed — checked against an
+  AST allowlist and executed as a subprocess under a dropped UID (`sandbox/`,
+  `backtest/`) — vendored and adapted from
+  [Vibe-Trading](https://github.com/HKUDS/Vibe-Trading) (MIT).

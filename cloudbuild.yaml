@@ -43,12 +43,25 @@ steps:
       '.'
     ]
 
+  # Step 5: Build the Trading Studio sandbox image (Cloud Run Job, not GKE —
+  # see Dockerfile.sandbox and TRADING_SANDBOX_JOB in .env.example).
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t',
+      '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SANDBOX_IMAGE_NAME}:${_VERSION}',
+      '-f',
+      'Dockerfile.sandbox',
+      '.'
+    ]
+
 # Images built above are pushed to Artifact Registry on a successful build.
 images:
   - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_API_IMAGE_NAME}:${_VERSION}'
   - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_WORKER_IMAGE_NAME}:${_VERSION}'
   - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_BEAT_IMAGE_NAME}:${_VERSION}'
   - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_LITELLM_IMAGE_NAME}:${_VERSION}'
+  - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SANDBOX_IMAGE_NAME}:${_VERSION}'
 
 # Substitution variables — override at build time with your own project/registry.
 # No project ID or registry path defaults to a maintainer-owned resource.
@@ -59,6 +72,7 @@ substitutions:
   _WORKER_IMAGE_NAME: 'bihand-worker'
   _BEAT_IMAGE_NAME: 'bihand-beat'
   _LITELLM_IMAGE_NAME: 'bihand-litellm'
+  _SANDBOX_IMAGE_NAME: 'bihand-sandbox'
   _VERSION: 'v1'
 
 options:

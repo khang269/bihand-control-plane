@@ -35,6 +35,10 @@ celery_app.conf.update(
             "task": "fastapp.tasks.process_routines_task",
             "schedule": 60.0,
         },
+        "reconcile-trading-tasks-every-2-minutes": {
+            "task": "fastapp.tasks.reconcile_trading_tasks_task",
+            "schedule": 120.0,
+        },
         "reconcile-system-state-every-10-minutes": {
             "task": "fastapp.tasks.reconcile_system_state_task",
             "schedule": 600.0,

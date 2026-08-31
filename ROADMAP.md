@@ -5,13 +5,19 @@
 > Docker/Kubernetes agent backends, a leaner core with the creative verticals split out,
 > a real test suite, etc. **None of the phases below have been executed as a phase** —
 > what's actually in this repo today is a lighter, faster first pass with its own scope:
-> real credentials and infra-specific identifiers stripped, the Trading Studio vertical
-> and the 3D avatar/sticker-service integration removed entirely (both P0 items below,
-> done ahead of the rest of P0), everything else — including Architecture Studio and Film
-> Studio, which are this codebase's actual Gemini/Veo GenAI-SDK usage — left as-is. This
-> doc is included to show the architectural thinking behind where the project is headed,
-> not as a changelog of what already happened. See `README.md` for what's actually true
-> of this release today.
+> real credentials and infra-specific identifiers stripped, the 3D avatar/sticker-service
+> integration removed entirely (a P0 item below, done ahead of the rest of P0), everything
+> else — including Architecture Studio, Film Studio, and Trading Studio, all three of
+> which are this codebase's actual Gemini/Veo GenAI-SDK and sandboxed-agent usage — left
+> in. The "Out of scope — deleted in P0" table below (including its Trading Studio row)
+> describes a **hypothetical**, more aggressive core-only scope this doc was written to
+> plan toward, not what actually shipped — Trading Studio in particular stayed in this
+> release specifically because its Cloud Run Job sandbox (no server credential, zero-role
+> service account) is a genuinely interesting example of the "run untrusted LLM-written
+> code safely" pattern, not something to strip out for a leaner diff. This doc is included
+> to show the architectural thinking behind where the project is headed, not as a
+> changelog of what already happened. See `README.md` for what's actually true of this
+> release today.
 
 ## Context
 

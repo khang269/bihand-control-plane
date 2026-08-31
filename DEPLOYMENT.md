@@ -2,7 +2,10 @@
 
 Two ways to run Bihand: **local** (Docker Compose, zero cloud account, up in
 minutes) and **Google Kubernetes Engine** (the same four images this
-project's own test/prod deployments run, on your own GCP project). Both are
+project's own test/prod deployments run, on your own GCP project). A fifth
+image, `Dockerfile.sandbox`, is Trading Studio's LLM-code execution sandbox —
+it doesn't run in GKE, see the callout at the end of the GKE section below.
+Both are
 covered here end to end, including the two GCP project-setup steps that are
 easy to miss because nothing in this repo creates them for you — they cost
 someone real debugging time to track down, so they're documented in detail
@@ -35,10 +38,12 @@ or on GKE.
 
 ### 1. Build and push the images
 
-`cloudbuild.yaml` builds all four images (`Dockerfile.api`, `.worker`,
-`.beat`, `.litellm`) and pushes them to Artifact Registry. Override the
-substitution variables for your own project and registry rather than editing
-the file:
+`cloudbuild.yaml` builds all five images (`Dockerfile.api`, `.worker`,
+`.beat`, `.litellm`, `.sandbox`) and pushes them to Artifact Registry.
+Only the first four are deployed by the `deploy/k8s/` manifests below — the
+sandbox image is a Cloud Run Job, set up separately (see the callout at the
+end of this section). Override the substitution variables for your own
+project and registry rather than editing the file:
 
 ```bash
 gcloud builds submit \
@@ -145,6 +150,37 @@ Then sign up through the UI (email/password — no Google account needed, see
 before trusting the deployment. If it wedges, jump to Troubleshooting below
 — both known failure modes are common enough on a first deploy that they're
 worth ruling out before assuming something else is wrong.
+
+### Trading Studio's sandbox (optional, not part of the GKE steps above)
+
+Trading Studio's UI and API load and work normally with the steps above —
+the `/predict` and `/pricing` endpoints don't need anything extra. Only
+actually *running* a prediction needs the sandbox: a **Cloud Run Job**
+(`bihand-trading-sandbox` by default — see `TRADING_SANDBOX_JOB` in
+`fastapp/.env.example`) built from `Dockerfile.sandbox`, on a **service
+account granted no IAM roles at all** — that's load-bearing, not an
+oversight, see ARCHITECTURE.md's security model for why. In outline:
+
+```bash
+gcloud iam service-accounts create bihand-trading-sandbox \
+  --display-name="Bihand Trading Sandbox (zero-privilege)"
+
+gcloud run jobs create bihand-trading-sandbox \
+  --image=<LOCATION>-docker.pkg.dev/<PROJECT_ID>/<REPOSITORY>/bihand-sandbox:v1 \
+  --service-account=bihand-trading-sandbox@<PROJECT_ID>.iam.gserviceaccount.com \
+  --cpu=0.5 --memory=512Mi --task-timeout=300s --max-retries=0 \
+  --no-vpc-connector \
+  --region=<LOCATION>
+
+# Only the API's own service account may start executions:
+gcloud run jobs add-iam-policy-binding bihand-trading-sandbox \
+  --region=<LOCATION> \
+  --member="serviceAccount:<your-api-pod's-service-account>" \
+  --role="roles/run.invoker"
+```
+
+Skip this section entirely if you don't need Trading Studio — nothing else
+in this guide depends on it.
 
 ---
 
