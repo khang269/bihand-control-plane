@@ -251,6 +251,38 @@ loop that's stuck for each of them isn't watching for a firewall change
 mid-flight. Delete and re-provision them once the rule is live on the right
 network.
 
+### Codex chat fails immediately: "Codex process exited (code 1)"
+
+**Cause:** unrelated to any provider, model, or the two GCP issues above —
+this is a broken `codex` CLI install on that specific agent VM.
+`codex_strategy.py`'s bootstrap script installs `@openai/codex` via npm,
+then checked `command -v codex` to decide whether to fall back to
+`@latest`. That only proves the JS wrapper installed and created the `codex`
+shim on PATH; it doesn't prove the CLI actually works. `@openai/codex` ships
+its real executable as a platform-specific *optional* npm dependency
+(`@openai/codex-linux-x64`) — npm can install the wrapper successfully while
+silently dropping that package, leaving `codex` on PATH but throwing
+`Missing optional dependency @openai/codex-linux-x64` and exiting with code
+1 the instant anything actually runs it. `command -v codex` passed, so the
+fallback reinstall never triggered, and the broken install shipped.
+
+**Confirm it (SSH into the agent VM):**
+```bash
+codex --version
+```
+If that itself fails with `Missing optional dependency @openai/codex-linux-x64`,
+this is it.
+
+**Fix an already-affected VM:**
+```bash
+sudo npm uninstall -g @openai/codex
+sudo npm install -g @openai/codex@latest
+sudo systemctl restart bihand-codex-chat-daemon.service
+```
+Newly provisioned VMs won't hit this: the bootstrap script now checks
+`codex --version` actually succeeding, not just `command -v codex`, before
+deciding the pinned install is good.
+
 ### Quick reference
 
 | Symptom | Cause | Fix |
@@ -259,3 +291,4 @@ network.
 | `Failed to allocate static IP ... falling back to ephemeral` | Same SA also lacks `compute.addresses.create` | Harmless — safe to ignore unless you need a stable IP |
 | Instance stuck in `installing`, serial console shows the startup script *did* finish | No firewall rule for the `allow-all-user-ports` tag, **or** the rule exists but targets your custom VPC instead of `default` | Create/move the rule to `--network=default` — `gcpService.py` hardcodes agent VMs onto that network regardless of what network the control plane runs on. Re-provision any already-wedged instances. |
 | Instance stuck in `installing`, and the provisioning task is no longer in `celery inspect active` | The Celery task died (worker crash/OOM/restart), not hung | Check worker pod logs/restarts; re-provision |
+| Codex chat fails instantly with "Codex process exited (code 1)" | `codex --version` itself fails on that VM — a broken/partial npm install, unrelated to provider or model | `sudo npm uninstall -g @openai/codex && sudo npm install -g @openai/codex@latest && sudo systemctl restart bihand-codex-chat-daemon.service`. Fixed for new VMs going forward. |

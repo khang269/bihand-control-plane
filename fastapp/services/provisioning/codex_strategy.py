@@ -618,10 +618,25 @@ curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" nodejs
 
 # --- Install @openai/codex CLI ---
+# `command -v codex` only proves the JS wrapper installed and created the bin
+# shim - it does NOT prove codex actually works. @openai/codex ships its real
+# executable as a platform-specific *optional* dependency
+# (@openai/codex-linux-x64); npm can install the wrapper successfully while
+# silently dropping that optional package (a transient registry hiccup, a
+# version mismatch, whatever), leaving `codex` on PATH but exiting immediately
+# with "Missing optional dependency @openai/codex-linux-x64" the instant
+# anything tries to run it - which used to pass this check and go undetected
+# until a user's very first chat message failed with a generic "app-server
+# exited" error. Verify the CLI actually runs, not just that it exists.
 echo "Installing OpenAI Codex..."
 npm install -g @openai/codex@0.147.0 || true
-if ! command -v codex &> /dev/null; then
-    npm install -g @openai/codex || true
+if ! codex --version &> /dev/null; then
+    echo "Pinned codex install isn't functional (binary missing?) - reinstalling @latest..."
+    npm uninstall -g @openai/codex || true
+    npm install -g @openai/codex@latest || true
+fi
+if ! codex --version &> /dev/null; then
+    echo "WARNING: codex CLI still not functional after reinstall attempt." >&2
 fi
 
 # --- Install ws (websocket server library for the interactive chat daemon) ---
