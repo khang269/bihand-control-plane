@@ -21,3 +21,5 @@ is a mockup.
 | 12 | `12-delegation-pipeline-detail.png` | Task detail view — the CEO→Engineer delegation pipeline and full subtask requirements |
 | 13 | `13-live-activity-audit-trail.png` | Live audit trail: the actual `delegate` tool call the CEO agent made, args and all |
 | 14 | `14-portal-dashboard.png` | Portal dashboard — fleets, daily compute cost, active agents, encryption status |
+| 15 | `15-agent-settings-live-screen-link.png` | Agent settings panel — the **Live Screen** link into that agent's own desktop |
+| 16 | `16-live-browser-workspace.png` | The live browser workspace itself (NoVNC) — a real Chrome session on the agent's VM, ready for a human to sign in and hand off |

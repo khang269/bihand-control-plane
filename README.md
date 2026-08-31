@@ -183,7 +183,19 @@ dispatch it — auto-assign routes it to the top-level agent, or target a specif
 Within moments the agent picks it up and starts executing autonomously
 ([`10-agent-autonomously-working.png`](./docs/screenshots/10-agent-autonomously-working.png)).
 
-**7. Watch it delegate.** A manager agent that decides a task needs a specialist
+**7. Sit down at the same desk — human-agent collaboration, not a black box.** Every
+agent VM exposes its own live desktop over a NoVNC stream: open an agent's settings and
+click **Live Screen**
+([`15-agent-settings-live-screen-link.png`](./docs/screenshots/15-agent-settings-live-screen-link.png))
+to drop straight into its real, running Chrome session
+([`16-live-browser-workspace.png`](./docs/screenshots/16-live-browser-workspace.png)).
+Sign into your own Google account, CRM, or any other site *inside that browser*, then
+hand control back — the agent keeps working in the same logged-in session afterward,
+so it never needs its own copy of your credentials to act on your behalf. Pause,
+watch, or take over at any point; this is a shared workspace, not a sandbox the agent
+works in alone.
+
+**8. Watch it delegate.** A manager agent that decides a task needs a specialist
 calls the same `delegate` M2M tool a human never has to touch — the parent task goes
 `blocked` waiting on the subtask it just created, while the assignee starts working it
 ([`11-live-task-delegation.png`](./docs/screenshots/11-live-task-delegation.png)).
@@ -191,12 +203,12 @@ Opening the task shows the full delegation pipeline and the exact requirements t
 manager handed down
 ([`12-delegation-pipeline-detail.png`](./docs/screenshots/12-delegation-pipeline-detail.png)).
 
-**8. Audit everything.** The Live Feed is a real-time, append-only trail of every
+**9. Audit everything.** The Live Feed is a real-time, append-only trail of every
 agent decision and tool call — including the literal `delegate` invocation and its
 arguments, not a paraphrase of one
 ([`13-live-activity-audit-trail.png`](./docs/screenshots/13-live-activity-audit-trail.png)).
 
-**9. Back at the portal.** The top-level dashboard lists every fleet you run, its
+**10. Back at the portal.** The top-level dashboard lists every fleet you run, its
 daily compute cost, and total active agents across all of them
 ([`14-portal-dashboard.png`](./docs/screenshots/14-portal-dashboard.png)) — the
 starting point for deploying the next one.

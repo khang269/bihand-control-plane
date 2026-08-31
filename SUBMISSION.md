@@ -45,11 +45,17 @@ Hermes, NemoClaw). A human designs the org chart and a task board in a React das
 agents pick up real work from that board over a dedicated machine-to-machine API, using
 their own per-instance identity token, and report back into a durable state machine that
 survives an agent restart, a crash, or a different agent picking up the same task
-mid-flight. Two more things ride the same "durable state + an agent acting on it
-asynchronously" shape: an inbound customer-support pipeline (Messenger/Zalo → an agent
-drafts or auto-sends a reply), and two Gemini/Veo-powered creative studios for generated
-imagery and video. Every credential — provider API keys, OAuth tokens, agent tokens — is
-protected with Client-Side Field Level Encryption before it ever reaches the database.
+mid-flight. Every agent VM also exposes its own live desktop over a NoVNC stream — a
+human can drop into that exact browser, sign into their own Google account, CRM, or any
+other authenticated web app *inside* the agent's session, and hand the wheel back: the
+agent keeps working in that same logged-in browser afterward, rather than needing its own
+copy of the human's credentials. That's genuine human-agent collaboration in one shared
+workspace, not a sandboxed agent working blind. Two more things ride the same "durable
+state + an agent acting on it asynchronously" shape: an inbound customer-support pipeline
+(Messenger/Zalo → an agent drafts or auto-sends a reply), and two Gemini/Veo-powered
+creative studios for generated imagery and video. Every credential — provider API keys,
+OAuth tokens, agent tokens — is protected with Client-Side Field Level Encryption before
+it ever reaches the database.
 
 ### How we built it
 
