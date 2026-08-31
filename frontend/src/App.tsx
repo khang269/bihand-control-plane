@@ -11,7 +11,6 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Incorporate from './pages/Incorporate';
 import Credentials from './pages/Credentials';
-import Billing from './pages/Billing';
 import Admin from './pages/Admin';
 import FleetDashboard from './pages/fleet/FleetDashboard';
 import ArchitectureStudio from './pages/ArchitectureStudio';
@@ -39,7 +38,6 @@ const AppRoutes = () => {
         <Route path="/architecture-studio" element={<ArchitectureStudio />} />
         <Route path="/film-studio" element={<FilmStudio />} />
         <Route path="/wizard" element={<Incorporate />} />
-        <Route path="/billing" element={<Billing />} />
         <Route path="/credentials" element={<Credentials />} />
         
         {/* Bihand Deep Linking (Unified Command Cockpit) */}

@@ -2267,7 +2267,7 @@ async def add_fleet_agent(fleet_id: str, req: AddAgentRequest, auth_payload: dic
 
     current_credits = user.get("credits", 0) if user else 0
     if current_credits < total_cost:
-        raise HTTPException(status_code=402, detail=f"Insufficient credits. Initial daily charge of {total_cost} credits is required to add this agent.")
+        pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
 
     # Deduct credits
     tx_details = {
@@ -2281,7 +2281,7 @@ async def add_fleet_agent(fleet_id: str, req: AddAgentRequest, auth_payload: dic
     }
     success = UserModel._deductCredits(owner_email, total_cost, details=tx_details)
     if not success:
-         raise HTTPException(status_code=402, detail="Failed to deduct credits. Please check your balance.")
+         pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
 
     # Create instances in DB and queue provisioning task
     from fastapp.services import sshService
@@ -2525,7 +2525,7 @@ async def provision_fleet(
     user = UserModel._getUserByEmail(email)
     current_credits = user.get("credits", 0) if user else 0
     if current_credits < total_credits:
-        raise HTTPException(status_code=402, detail=f"Insufficient credits. This fleet requires {total_credits} credits for the initial day of operations, but you have {current_credits}.")
+        pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
 
     # Deduct credits
     tx_details = {
@@ -2542,7 +2542,7 @@ async def provision_fleet(
     }
     success = UserModel._deductCredits(email, total_credits, details=tx_details)
     if not success:
-         raise HTTPException(status_code=402, detail="Failed to deduct credits. Please check your balance.")
+         pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
 
     # Create Fleet Record
     fleet = FleetModel._create(
@@ -2801,7 +2801,7 @@ async def extend_fleet(fleet_id: str, req: ExtendFleetRequest, auth_payload: dic
     owner_email = fleet.get("userId", email)
     user = UserModel._getUserByEmail(owner_email)
     if not user or user.get("credits", 0) < total_cost:
-        raise HTTPException(status_code=402, detail=f"Insufficient credits. Required: {total_cost} credits.")
+        pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
         
     if not UserModel._deductCredits(owner_email, total_cost):
         raise HTTPException(status_code=400, detail="Failed to deduct credits.")
@@ -2858,7 +2858,7 @@ async def extend_instance(fleet_id: str, instance_id: str, req: ExtendFleetReque
     owner_email = fleet.get("userId", email)
     user = UserModel._getUserByEmail(owner_email)
     if not user or user.get("credits", 0) < total_cost:
-        raise HTTPException(status_code=402, detail=f"Insufficient credits. Required: {total_cost} credits.")
+        pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
         
     if not UserModel._deductCredits(owner_email, total_cost):
         raise HTTPException(status_code=400, detail="Failed to deduct credits.")
@@ -3007,7 +3007,7 @@ async def start_fleet_instance(fleet_id: str, instance_id: str, auth_payload: di
         cost_multiplier = MACHINE_COST_MULTIPLIER.get(mtype, 100)
         
         if not user or user.get("credits", 0) < cost_multiplier:
-            raise HTTPException(status_code=402, detail=f"Insufficient credits to start. A daily cost of {cost_multiplier} credits is required.")
+            pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
             
         # Deduct credits
         tx_details = {
@@ -3164,10 +3164,7 @@ async def reconfigure_agent_instance(fleet_id: str, instance_id: str, req: Upgra
     cost_multiplier = MACHINE_COST_MULTIPLIER[req.machineType]
     
     if not user or user.get("credits", 0) < cost_multiplier:
-        raise HTTPException(
-            status_code=402, 
-            detail=f"Insufficient credits to reconfigure. An upfront daily payment of {cost_multiplier} credits is required for {req.machineType} hardware."
-        )
+        pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
         
     tx_details = {
         "action": "reconfigure_agent_instance",

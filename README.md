@@ -4,7 +4,7 @@
 
 Built for the **[All Things Agentic Hackathon](https://allthingsagentichackathon.devpost.com/)** — **Fortified Enterprise Fleet** track.
 
-> This is a secrets-stripped, standalone snapshot of a larger private codebase, prepared for hackathon judging. See [`ROADMAP.md`](./ROADMAP.md) for the maintainer's plan to grow this into a fully self-hostable community project (pluggable Docker/Kubernetes agent backends, zero-cloud-account boot, etc.) — not yet executed, included here to show the engineering thinking behind the architecture.
+> This is a secrets-stripped, standalone snapshot of a larger private codebase, prepared for hackathon judging. **No Google account and no billing/credit system are required to use it** — log in with email + password, bring your own GCP project and LLM API key, and pay those providers directly; nothing here meters or gates on a credit balance. See [`ROADMAP.md`](./ROADMAP.md) for the maintainer's longer-term plan to grow this into a fully self-hostable community project — not yet executed, included to show the engineering thinking behind the architecture.
 
 ---
 
@@ -61,7 +61,7 @@ React SPA  ──HTTPS──▶  FastAPI (Uvicorn, stateless)  ──▶  MongoD
 
 ## Tech stack
 
-**Backend** — Python 3.12, FastAPI/Uvicorn, MongoDB (`pymongo` + `pymongocrypt` CSFLE), Celery + Redis, `google-genai` (Gemini/Vertex AI), Google Cloud Compute SDK, paramiko (SSH), PyJWT, Stripe.
+**Backend** — Python 3.12, FastAPI/Uvicorn, MongoDB (`pymongo` + `pymongocrypt` CSFLE), Celery + Redis, `google-genai` (Gemini/Vertex AI), Google Cloud Compute SDK, paramiko (SSH), PyJWT, bcrypt.
 **Frontend** — React 19, TypeScript, Vite, TailwindCSS, React Router 7.
 **Infra** — Docker, Kubernetes (GKE), Cloud Build, Artifact Registry.
 
@@ -69,7 +69,7 @@ React SPA  ──HTTPS──▶  FastAPI (Uvicorn, stateless)  ──▶  MongoD
 
 ## Getting started (local)
 
-Zero cloud account is required to boot the control plane itself — MongoDB and Redis both run as local containers. You only need a Gemini API key (free, from [aistudio.google.com](https://aistudio.google.com/apikey)) so agents have an LLM to call, and a GCP project only if you want to provision *real* agent VMs rather than just exercise the API/dashboard.
+Zero cloud account is required to boot the control plane itself — MongoDB and Redis both run as local containers, and logging in is a plain email/password form (no Google OAuth app to register, no consent screen). You only need a Gemini API key (free, from [aistudio.google.com](https://aistudio.google.com/apikey)) so agents have an LLM to call, and a GCP project only if you want to provision *real* agent VMs rather than just exercise the API/dashboard. **There is no billing or credit system in this build** — every action is BYOK; you pay Google Cloud and your LLM provider directly, not this platform.
 
 ### 1. Configure environment
 
@@ -100,9 +100,13 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-### 4. GCP-backed agent provisioning (optional)
+### 4. Log in
 
-To actually spin up agent VMs rather than just explore the dashboard/API, also set in `fastapp/.env`: `GOOGLE_CLOUD_PROJECT_ID`, `GCP_REGION`, `GCP_DEFAULT_ZONE`, and point `GOOGLE_APPLICATION_CREDENTIALS` at your own GCP service-account JSON with the Compute Engine API enabled. This repo's own test/prod deployment runs the same four images on **GKE** via `cloudbuild.yaml` + Kubernetes manifests (infra manifests are not included in this snapshot).
+Open `http://localhost:5173` and sign up with any email + password — there's no Google account or invite needed. (If you'd rather sign in with Google, set `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` in `fastapp/.env` and `VITE_GOOGLE_CLIENT_ID` for the frontend build; the login page shows a Google button automatically once `GET /api/auth/config` reports it configured. It's entirely optional.) To make your account an admin, set `ADMIN_USER=you@example.com` in `fastapp/.env` before your first login.
+
+### 5. GCP-backed agent provisioning (optional)
+
+To actually spin up agent VMs rather than just explore the dashboard/API, add a credential for your LLM provider in the Credentials page, and set in `fastapp/.env`: `GOOGLE_CLOUD_PROJECT_ID`, `GCP_REGION`, `GCP_DEFAULT_ZONE`, and point `GOOGLE_APPLICATION_CREDENTIALS` at your own GCP service-account JSON with the Compute Engine API enabled. There is no credit/billing gate in front of this — GCP bills your own project directly. This repo's own test/prod deployment runs the same four images on **GKE** via `cloudbuild.yaml` + Kubernetes manifests (infra manifests are not included in this snapshot).
 
 ### Production build / lint
 
@@ -116,7 +120,7 @@ cd frontend && npm run lint && npm run build   # tsc -b && vite build -> fronten
 
 **Fleet provisioning** (`fleetModel` + `services/provisioning/`): a user defines an org chart and clicks deploy → the API validates and enqueues via Redis → a Celery worker creates a GCP Compute instance per agent, injects a bootstrap script via VM metadata (installs the chosen agent runtime — Claude Code, Codex, OpenClaw, …), and writes the encrypted connection details back to MongoDB.
 
-**Instance lifecycle**: `provisioning_queued → provisioning → installing → running → stopping_queued → stopped → deleting → deleted`, with a parallel `error`/`updating` path. A Celery Beat job runs every 5 minutes to auto-suspend instances whose credit balance ran out and refund ones stuck mid-provision.
+**Instance lifecycle**: `provisioning_queued → provisioning → installing → running → stopping_queued → stopped → deleting → deleted`, with a parallel `error`/`updating` path. A Celery Beat job runs every 5 minutes to detect and refund instances stuck mid-provision.
 
 **Task execution (the M2M loop)**: an agent VM calls `GET /api/internal/tasks/next` with its `X-Agent-Token`, atomically checks out a task, works it, and reports status via `PATCH /api/internal/tasks/{id}/status` — the same 8-state task machine (`backlog → todo → in_progress → in_review/blocked/failed → done`) that the human dashboard uses, so a human and an agent can hand a task back and forth.
 
@@ -137,7 +141,7 @@ fastapp/
   utils/           mcp_normalizer, jwtUtils, adminAuth, socialUtils, systemPrompt
   migrations/      Declarative, lock-gated schema/VM migration runner
 frontend/
-  src/pages/       Dashboard, fleet workspace, Architecture/Film Studio, admin, billing
+  src/pages/       Dashboard, fleet workspace, Architecture/Film Studio, admin, login/register
   src/components/  Layout, org chart, landing page
 docker-compose.test.yml   Local dev stack: mongo, redis, litellm, api, worker, beat
 Dockerfile.api / .worker / .beat / .litellm   The four images actually deployed to GKE
@@ -150,7 +154,9 @@ ROADMAP.md                Maintainer's plan for a fuller community open-source r
 
 ## What's intentionally left out of this snapshot
 
-This is a hackathon-scoped copy of a larger private codebase. Removed for this submission (not because they're broken, but because they're out of scope for the Fortified Enterprise Fleet story and/or depend on infrastructure not included here): the Trading Studio vertical (needed a separate Cloud Run sandbox image not included), Kubernetes/Helm deployment manifests, and the vendored quant-trading engine the private repo also contains. Real, working credentials, a live API key, an admin-email backdoor, and a default OAuth client ID that existed in the private repo have all been removed or replaced with operator-configured environment variables — see the git history of this repo for the (single, clean) commit this was prepared in.
+This is a hackathon-scoped copy of a larger private codebase. Removed for this submission (not because they're broken, but because they're out of scope for the Fortified Enterprise Fleet story, add friction a judge shouldn't have to deal with, and/or depend on infrastructure not included here): the Trading Studio vertical (needed a separate Cloud Run sandbox image not included), all Stripe/credit-purchase billing (the credit *system* itself is also disabled — see below), Kubernetes/Helm deployment manifests, and the vendored quant-trading engine the private repo also contains. Real, working credentials, a live API key, an admin-email backdoor, and a default OAuth client ID that existed in the private repo have all been removed or replaced with operator-configured environment variables — see the git history of this repo for the (single, clean) commit this was prepared in.
+
+**No Google login, no credit gating.** The private codebase this was forked from required Google OAuth to sign in at all, and gated every provisioning action behind a Stripe-purchased credit balance. Neither survives in this build: sign-in defaults to a plain email/password form (`POST /api/auth/register` / `/login`, bcrypt-hashed, JWT-issued — Google stays available as an *optional* extra if you configure `GOOGLE_CLIENT_ID`), and every credit/balance check in `instanceController.py`, `fleetController.py`, `architectureController.py`, and `filmStudioController.py` has been removed (`UserModel._deductCredits` is now a no-op). Clone it, add your own GCP project and LLM key, and go — nothing here asks you to pay this platform for anything.
 
 ---
 

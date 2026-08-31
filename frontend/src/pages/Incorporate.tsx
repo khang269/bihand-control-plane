@@ -13,7 +13,6 @@ import {
   Globe,
   Upload
 } from 'lucide-react';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -22,7 +21,7 @@ import AgentSetupWizard from '../components/AgentSetupWizard';
 
 const Incorporate: React.FC = () => {
   const navigate = useNavigate();
-  const { token, user, login } = useAuth();
+  const { token, user } = useAuth();
   const { t, language } = useLanguage();
   const onBehalfOf = useMemo(() => new URLSearchParams(window.location.search).get('email'), []);
   const [activeStep, setActiveStep] = useState(1);
@@ -413,24 +412,13 @@ const Incorporate: React.FC = () => {
     }
   };
 
-  const handlePurchaseFromWizard = async (packageId: string) => {
-    try {
-      const res = await api.post('/billing/checkout', { package_id: packageId });
-      if (res.data?.url) {
-        window.location.href = res.data.url;
-      }
-    } catch (e) {
-      alert("Failed to initialize payment gateway. Please ensure billing configuration is correct.");
-    }
-  };
-
   return (
     <div className="max-w-6xl mx-auto pb-24">
       {onBehalfOf && (
         <div className="mb-6 p-4 bg-purple-950/20 border border-purple-500/20 rounded-2xl flex items-center justify-between text-left text-xs text-purple-300">
           <div>
             <span className="font-extrabold uppercase font-mono block text-purple-400">👑 Admin Backdoor Provisioning Mode</span>
-            You are configuring and launching this entire fleet on behalf of the user <strong className="text-white">{onBehalfOf}</strong>. The system will use this user's preconfigured encrypted API keys and deduct credits from their balance.
+            You are configuring and launching this entire fleet on behalf of the user <strong className="text-white">{onBehalfOf}</strong>. The system will use this user's preconfigured, encrypted credentials.
           </div>
           <button onClick={() => navigate('/admin')} className="px-3 py-1.5 bg-[#27272a]/60 hover:bg-[#27272a] text-white font-bold rounded-lg border border-[#27272a] hover:border-[#3f3f46]">
             Return to Admin Panel
@@ -752,15 +740,16 @@ const Incorporate: React.FC = () => {
                 </div>
               </div>
 
-              <div className="border-t border-[#27272a] pt-4 flex items-center justify-between">
-                <div>
-                  <span className="text-xs text-[#a1a1aa]">{language === 'vi' ? 'Chi phí tiêu hao:' : 'Deduction Rate:'}</span>
-                  <div className="text-xl font-semibold text-[#fafafa] mt-1">{totalCost} Credits/{language === 'vi' ? 'Ngày' : 'Day'}</div>
+              <div className="border-t border-[#27272a] pt-4">
+                <span className="text-xs text-[#a1a1aa]">{language === 'vi' ? 'Ước tính chi phí GCP:' : 'Estimated GCP cost:'}</span>
+                <div className="text-xl font-semibold text-[#fafafa] mt-1">
+                  ~{totalCost} {language === 'vi' ? '(đơn vị máy) / Ngày' : 'compute-units / day'}
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-[#a1a1aa] block">{language === 'vi' ? 'Ví trung tâm' : 'Central Wallet'}</span>
-                  <span className="text-xs text-emerald-400 font-mono font-semibold">{language === 'vi' ? 'Hiện có:' : 'Available:'} {user?.credits || 0} Credits</span>
-                </div>
+                <p className="text-[10px] text-[#a1a1aa] mt-1">
+                  {language === 'vi'
+                    ? 'Không có hệ thống thanh toán trong bản mã nguồn mở này — bạn dùng khóa GCP và API key của riêng mình, và trả trực tiếp cho GCP/nhà cung cấp LLM.'
+                    : "No billing in this open-source build — you use your own GCP account and LLM API key, and pay GCP/your LLM provider directly."}
+                </p>
               </div>
             </div>
           </div>
@@ -768,98 +757,26 @@ const Incorporate: React.FC = () => {
           <div className="border-t border-[#27272a] pt-6 mt-6">
             {!token ? (
               <div className="bg-[#111113] border border-[#27272a] rounded-xl p-6 text-center space-y-4 max-w-md mx-auto">
-                <h3 className="text-sm font-semibold text-[#fafafa] uppercase tracking-wider">Sign In to Launch Your Fleet</h3>
+                <h3 className="text-sm font-semibold text-[#fafafa] uppercase tracking-wider">Sign in to launch your fleet</h3>
                 <p className="text-xs text-[#a1a1aa] leading-relaxed">
-                  You are currently in guest mode. To securely save your credentials, manage your balance, and launch this AI fleet, please sign in with Google first.
+                  You're in guest mode. Log in (email + password — no Google account needed) to save your credentials and launch this fleet.
                 </p>
-                <div className="flex justify-center pt-2">
-                  <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ""}>
-                    <GoogleLogin
-                      onSuccess={async (credentialResponse) => {
-                        if (credentialResponse.credential) {
-                          try {
-                            await login(credentialResponse.credential);
-                          } catch (err) {
-                            alert('Login failed. Ensure backend is running.');
-                          }
-                        }
-                      }}
-                      onError={() => {
-                        alert('Google Login Failed');
-                      }}
-                      theme="filled_black"
-                      size="large"
-                      text="continue_with"
-                      shape="rectangular"
-                    />
-                  </GoogleOAuthProvider>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="mt-2 bg-[#fafafa] text-[#18181b] px-6 py-2.5 rounded-lg font-medium hover:opacity-90 text-sm"
+                >
+                  Go to login
+                </button>
               </div>
             ) : (
               <div className="space-y-6">
-                {(user?.credits !== undefined && user.credits < totalCost) && (
-                  <div className="border border-red-500/30 bg-red-500/5 rounded-xl p-5 space-y-4 text-left">
-                    <div className="flex items-start gap-3">
-                      <div className="text-red-500 mt-0.5">⚠️</div>
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-semibold text-red-400">Insufficient Balance to Provision</h4>
-                        <p className="text-xs text-[#a1a1aa] leading-relaxed">
-                          Your central wallet has <strong className="text-[#fafafa] font-mono">{user?.credits} Credits</strong>, but this fleet requires a monthly minimum reservation of <strong className="text-[#fafafa] font-mono">{totalCost} Credits</strong> to boot up.
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="border-t border-[#27272a] pt-4">
-                      <h5 className="text-xs font-semibold text-[#fafafa] uppercase mb-3">Top Up Balance to Launch</h5>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="border border-[#27272a] rounded-lg p-3 bg-[#18181b] flex flex-col justify-between items-center text-center">
-                          <span className="text-[10px] font-bold text-[#a1a1aa]">STARTER</span>
-                          <span className="text-lg font-bold text-[#fafafa] mt-1">$29 USD</span>
-                          <span className="text-[10px] text-[#a1a1aa] mt-0.5">3,000 Credits</span>
-                          <button 
-                            type="button"
-                            onClick={() => handlePurchaseFromWizard('starter')}
-                            className="mt-3 w-full bg-transparent border border-[#27272a] hover:bg-[#27272a] py-1 rounded text-xs transition-colors text-[#fafafa]"
-                          >
-                            Buy Now
-                          </button>
-                        </div>
-                        <div className="border border-[#fafafa]/50 rounded-lg p-3 bg-[#18181b] flex flex-col justify-between items-center text-center relative">
-                          <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#fafafa] text-[#000] text-[8px] font-extrabold px-1.5 py-0.5 rounded-full uppercase">Popular</span>
-                          <span className="text-[10px] font-bold text-[#fafafa]">PRO</span>
-                          <span className="text-lg font-bold text-[#fafafa] mt-1">$99 USD</span>
-                          <span className="text-[10px] text-[#a1a1aa] mt-0.5">12,000 Credits</span>
-                          <button 
-                            type="button"
-                            onClick={() => handlePurchaseFromWizard('pro')}
-                            className="mt-3 w-full bg-[#fafafa] text-[#000] font-semibold py-1 rounded text-xs hover:opacity-90 transition-opacity"
-                          >
-                            Buy Now
-                          </button>
-                        </div>
-                        <div className="border border-[#27272a] rounded-lg p-3 bg-[#18181b] flex flex-col justify-between items-center text-center">
-                          <span className="text-[10px] font-bold text-[#a1a1aa]">ENTERPRISE</span>
-                          <span className="text-lg font-bold mt-1">$1,999 USD</span>
-                          <span className="text-[10px] text-[#a1a1aa] mt-0.5">300,000 Credits</span>
-                          <button 
-                            type="button"
-                            onClick={() => handlePurchaseFromWizard('enterprise')}
-                            className="mt-3 w-full bg-transparent border border-[#27272a] hover:bg-[#27272a] py-1 rounded text-xs transition-colors text-[#fafafa]"
-                          >
-                            Buy Now
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 <div className="flex justify-between items-center pt-4 border-t border-[#27272a]">
                   <button type="button" onClick={() => setActiveStep(3)} className="text-sm font-medium text-[#a1a1aa] hover:text-[#fafafa]">Back</button>
-                  <button 
+                  <button
                     className="bg-[#fafafa] text-[#18181b] px-6 py-2.5 rounded-lg font-medium hover:opacity-90 disabled:opacity-50 flex items-center gap-2 text-sm"
                     onClick={handleSubmit}
-                    disabled={isSubmitting || !password || (user?.credits !== undefined && user.credits < totalCost)}
+                    disabled={isSubmitting || !password}
                   >
                     {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Rocket size={16} />}
                     Provision & Launch

@@ -648,7 +648,7 @@ def execute_image_render(req: ImageRenderRequest, background_tasks: BackgroundTa
         
     deducted = UserModel._deductCredits(email, credit_cost, {"app": "sant-arch-studio", "feature": "image-render", **req.dict()})
     if not deducted:
-        raise HTTPException(status_code=402, detail="Insufficient credits.")
+        pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
 
     task_id = generateHash()
     
@@ -683,7 +683,7 @@ def execute_floorplan_render(req: FloorPlanRenderRequest, background_tasks: Back
         
     deducted = UserModel._deductCredits(email, credit_cost, {"app": "sant-arch-studio", "feature": "floorplan-render", **req.dict()})
     if not deducted:
-        raise HTTPException(status_code=402, detail="Insufficient credits.")
+        pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
 
     task_id = generateHash()
     
@@ -718,7 +718,7 @@ def execute_ai_renovation(req: AiRenovationRequest, background_tasks: Background
         
     deducted = UserModel._deductCredits(email, credit_cost, {"app": "sant-arch-studio", "feature": "ai-renovation", **req.dict()})
     if not deducted:
-        raise HTTPException(status_code=402, detail="Insufficient credits.")
+        pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
 
     task_id = generateHash()
     
@@ -753,7 +753,7 @@ def execute_view_sync(req: ViewSyncRequest, background_tasks: BackgroundTasks, c
         
     deducted = UserModel._deductCredits(email, credit_cost, {"app": "sant-arch-studio", "feature": "view-sync", **req.dict()})
     if not deducted:
-        raise HTTPException(status_code=402, detail="Insufficient credits.")
+        pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
 
     task_id = generateHash()
     

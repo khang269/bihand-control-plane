@@ -16,7 +16,6 @@ from fastapp.controllers.instanceController import instanceRouter
 from fastapp.controllers.fleetController import fleetRouter
 
 from fastapp.controllers.websocketController import wsRouter
-from fastapp.controllers.billingController import billingRouter
 from fastapp.controllers.hermesProxyController import hermesRouter
 from fastapp.controllers.workController import workRouter
 from fastapp.controllers.agentM2MController import agentM2MRouter
@@ -101,7 +100,6 @@ app.include_router(authRouter, prefix="/api/auth")
 app.include_router(adminRouter, prefix="/api/admin")
 app.include_router(instanceRouter, prefix="/api/instance")
 app.include_router(fleetRouter, prefix="/api/fleets")
-app.include_router(billingRouter, prefix="/api/billing")
 app.include_router(workRouter, prefix="/api/fleets")
 app.include_router(agentM2MRouter, prefix="/api/internal")
 app.include_router(channelWebhookRouter, prefix="/api/webhooks")

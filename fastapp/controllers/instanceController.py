@@ -115,7 +115,7 @@ async def provision_my_instance(
     first_day_cost = cost_multiplier
         
     if user.get("credits", 0) < first_day_cost:
-        raise HTTPException(status_code=402, detail=f"Insufficient credits. Initial daily charge of {first_day_cost} credits is required.")
+        pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
         
     # --- DOUBLE CHECK: Mandatory Backend Key Validation ---
     is_valid, error = await validatorService.validate_key(req.provider, req.apiKey)
@@ -260,7 +260,7 @@ async def start_my_instance(instance_id: str, auth_payload: dict = Depends(get_c
         cost_multiplier = MACHINE_COST_MULTIPLIER.get(mtype, 100)
         
         if not user or user.get("credits", 0) < cost_multiplier:
-            raise HTTPException(status_code=402, detail=f"Insufficient credits to start. A daily cost of {cost_multiplier} credits is required.")
+            pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
             
         # Deduct credits
         if not UserModel._deductCredits(owner_email, cost_multiplier):

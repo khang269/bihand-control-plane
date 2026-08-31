@@ -74,8 +74,9 @@ An agent VM calls `GET /api/internal/tasks/next` with its `X-Agent-Token`, which
 resolves against the `dashboardToken` stored on its `instances` document — no user
 credential is ever present on the VM. The agent works the task using its *own* LLM
 credential (BYOK, resolved from `credentialController` at provisioning time, or the
-built-in `bihand`-provider path that routes through the LiteLLM sidecar and is metered
-against `users.credits`), then reports back via `PATCH /api/internal/tasks/{id}/status`.
+built-in `bihand`-provider path that routes through the LiteLLM sidecar to Gemini — this
+OSS build has no credit/billing gate, so that path is unmetered rather than deducted from
+a purchased balance), then reports back via `PATCH /api/internal/tasks/{id}/status`.
 Every status change fans out over the Redis-backed WebSocket layer, so the dashboard
 updates live without polling.
 
@@ -109,8 +110,10 @@ and `REDIS_URL` point.
 ## Security model at a glance
 
 - **Three separate auth schemes, none of them shared**: JWT for human dashboard
-  sessions, `X-Agent-Token` (opaque, per-instance, DB-resolved) for agent M2M calls, and
-  HMAC webhook-signature verification for inbound Messenger/Zalo events.
+  sessions (default sign-in is email/password — bcrypt-hashed, no Google account
+  required; Google OAuth is available as an opt-in extra), `X-Agent-Token` (opaque,
+  per-instance, DB-resolved) for agent M2M calls, and HMAC webhook-signature
+  verification for inbound Messenger/Zalo events.
 - **CSFLE, not application-level encryption bolted on**: provider API keys and OAuth
   tokens are encrypted client-side (`AEAD_AES_256_CBC_HMAC_SHA_512`) before they ever
   reach MongoDB's wire protocol — a DB dump or a compromised read replica exposes

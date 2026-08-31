@@ -14,6 +14,7 @@ interface AuthContextType {
   token: string | null;
   user: User | null;
   login: (credential: string) => Promise<void>;
+  loginWithToken: (accessToken: string) => void;
   logout: () => void;
   isLoading: boolean;
   refreshToken: () => Promise<void>;
@@ -84,6 +85,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // For the local (email/password) auth endpoints, which already return a
+  // finished access_token — no separate token-exchange step needed.
+  const loginWithToken = (accessToken: string) => {
+    setToken(accessToken);
+    localStorage.setItem('mc_token', accessToken);
+    const todayStr = new Date().toISOString().split('T')[0];
+    localStorage.setItem('mc_last_refresh_date', todayStr);
+    parseToken(accessToken);
+    refreshToken();
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -104,7 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout, isLoading, refreshToken }}>
+    <AuthContext.Provider value={{ token, user, login, loginWithToken, logout, isLoading, refreshToken }}>
       {children}
     </AuthContext.Provider>
   );

@@ -179,7 +179,7 @@ def dispatch_film_studio_generation(req: FilmStudioRequest, background_tasks: Ba
     
     deducted = UserModel._deductCredits(email, credit_cost, {"app": "sant-film-studio", "feature": req.feature, **req.dict()})
     if not deducted:
-        raise HTTPException(status_code=402, detail="Insufficient credits.")
+        pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
 
     task_id = generateHash()
     
@@ -282,7 +282,7 @@ def regenerate_film_studio_block(task_id: str, page_id: str, req: BlockRegenerat
         
         deducted = UserModel._deductCredits(email, credit_cost, {"app": "sant-film-studio", "feature": "regenerate-block", "taskId": task_id, "pageId": page_id})
         if not deducted:
-            raise HTTPException(status_code=402, detail="Insufficient credits.")
+            pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
             
         render_doc = {
             "_id": task_id,
@@ -322,7 +322,7 @@ def regenerate_film_studio_block(task_id: str, page_id: str, req: BlockRegenerat
 
     deducted = UserModel._deductCredits(email, credit_cost, {"app": "sant-film-studio", "feature": "regenerate-block", "taskId": task_id, "pageId": page_id})
     if not deducted:
-        raise HTTPException(status_code=402, detail="Insufficient credits.")
+        pass  # OSS build: no credit/billing gating (BYOK — bring your own GCP + LLM key)
 
     sections = task.get("comicSections", []) or []
     for sec in sections:

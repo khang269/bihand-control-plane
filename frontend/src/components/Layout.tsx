@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Building2, PlusCircle, CreditCard, LayoutDashboard, LogOut, ChevronDown, ChevronRight, Inbox, CircleDot, Repeat, Target, Bot, Network, DollarSign, Lock, Activity, Settings as SettingsIcon, Video } from 'lucide-react';
+import { Building2, PlusCircle, LayoutDashboard, LogOut, ChevronDown, ChevronRight, Inbox, CircleDot, Repeat, Target, Bot, Network, DollarSign, Lock, Activity, Settings as SettingsIcon, Video } from 'lucide-react';
 import api from '../lib/api';
 import { useAvatar } from '../lib/avatarCache';
 import { cn } from '../lib/cn';
@@ -243,9 +243,6 @@ const Layout: React.FC = () => {
                 </Link>
                 <Link to="/credentials" className={navLinkClass(location.pathname === '/credentials')}>
                   <Lock size={16} /> {t('nav.credentials')}
-                </Link>
-                <Link to="/billing" className={navLinkClass(location.pathname === '/billing')}>
-                  <CreditCard size={16} /> {t('nav.billing_packages')}
                 </Link>
                 {user?.role === 'admin' && (
                   <Link to="/admin" className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-emerald-500 transition-colors mt-4 border-t border-border pt-4">

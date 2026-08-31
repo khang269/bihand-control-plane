@@ -29,6 +29,11 @@ UI — is what this project builds.
 
 ## Features and functionality
 
+- **Frictionless for a judge to actually try** — sign-in is email/password (no Google
+  account, no OAuth app to register), and there is no credit/billing wall in front of
+  any action: bring your own GCP project and LLM API key and deploy immediately. You
+  pay Google Cloud and your LLM provider directly — this platform doesn't meter or
+  gate on a purchased balance anywhere.
 - **Fleet provisioning** — define an org chart (CEO/CTO/engineer/support/…), pick an
   agent runtime per role (Claude Code, Codex, OpenClaw, OpenCode, Hermes, NemoClaw), and
   deploy: the platform creates one isolated GCP Compute VM per agent and bootstraps its
@@ -64,8 +69,8 @@ UI — is what this project builds.
 Gemini API (`gemini-3.5-flash`), Vertex AI, `google-genai` Python SDK, Veo, Imagen,
 Google Cloud Compute Engine, Google Kubernetes Engine, Cloud Build, Artifact Registry,
 FastAPI, Uvicorn, MongoDB (Client-Side Field Level Encryption via `pymongocrypt`),
-Celery, Redis, LiteLLM, React 19, TypeScript, Vite, TailwindCSS, Docker, Stripe,
-paramiko (SSH), PyJWT.
+Celery, Redis, LiteLLM, React 19, TypeScript, Vite, TailwindCSS, Docker,
+paramiko (SSH), PyJWT, bcrypt.
 
 ## Other data sources used
 
@@ -92,6 +97,14 @@ credentials the operator attaches to that agent).
   operator-supplied environment variables, admin access made config-driven. That's not
   cosmetic: a hardcoded admin backdoor in particular is exactly the kind of thing "does
   it violate enterprise security policy" is asking about.
+- **A hosted product's login and billing model actively fights an open-source
+  submission's usability.** The private codebase required Google OAuth to sign in at
+  all and gated every provisioning action behind a Stripe-purchased credit balance —
+  fine for a hosted SaaS, actively hostile to "a judge clones this and tries it in five
+  minutes." Both are removed here: local email/password auth is the default (Google is
+  now an optional extra), and every credit/balance check across instance, fleet, and
+  studio provisioning was removed rather than just raised to a generous limit — so
+  nothing quietly starts blocking again later.
 - **What we'd build next** (see `ROADMAP.md`): pluggable Docker/Kubernetes agent
   backends so the platform runs with zero cloud account for local development, and a
   real automated test suite — there is currently none.
@@ -119,9 +132,13 @@ See `README.md` → "Getting started (local)". Summary: `cp .env.template .env` 
 `cp fastapp/.env.example fastapp/.env`, fill in a free Gemini API key plus two generated
 secrets, then `docker compose -f docker-compose.test.yml up --build` — MongoDB and Redis
 run as bundled local containers, so no cloud account is required just to boot the
-control plane and explore the dashboard/API. This was verified end-to-end while
-preparing this snapshot: the API boots, runs its DB migrations, and serves real
-requests against a local `mongo:7` container with zero external accounts.
+control plane and explore the dashboard/API. Open the frontend and sign up with any
+email/password (no Google account, no invite). This was verified end-to-end while
+preparing this snapshot: the API boots, runs its DB migrations, serves real requests
+against a local `mongo:7` container with zero external accounts, and `POST
+/api/auth/register` → `/api/auth/login` → `GET /api/auth/me` were exercised directly
+against a running instance and confirmed to issue a working JWT with no password hash
+leaking into the response.
 
 ## Demo video checklist (record before submitting — not done yet)
 

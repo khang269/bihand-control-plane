@@ -31,24 +31,28 @@ class UserModel:
     @classmethod
     def _createUser(
         cls,
-        hash: str, 
+        hash: str,
         email: str,
         name: str,
         avatar: str,
-        authProviders: Optional[List[Dict]] = None
+        authProviders: Optional[List[Dict]] = None,
+        passwordHash: Optional[str] = None,
     ):
-        """Create a new user document"""
+        """Create a new user document. passwordHash is set only for local
+        (email/password) sign-ups — Google-only users never get one."""
         currentTime = datetime.now(timezone.utc)
         user = {
             "hash": hash,
             "email": email,
             "name": name,
             "avatar": avatar,
-            "credits": 150, # Default 150 credits for new signups
+            "credits": 150,  # vestigial — this OSS build has no billing/credit gating (BYOK)
             "authProviders": authProviders if authProviders is not None else [],
             "createdDate": currentTime,
             "updatedDate": currentTime
         }
+        if passwordHash:
+            user["passwordHash"] = passwordHash
 
         result = get_db()[cls.collectionName].insert_one(user)
         return cls._getUserById(result.inserted_id)
@@ -90,7 +94,10 @@ class UserModel:
     
     @classmethod
     def _getUserByEmail(cls, email: str):
-        """Retrieve a user by its email."""
+        """Retrieve a user by its email. Never includes passwordHash — this is
+        the general-purpose lookup used anywhere a user doc might reach the
+        API response (e.g. GET /auth/me). For password verification, use
+        _getUserByEmailForAuth instead."""
         db = get_db()
         user = db[cls.collectionName].find_one({"email": email})
         if not user:
@@ -98,11 +105,28 @@ class UserModel:
         return cls._serializeUser(cls._decryptUser(user))
 
     @classmethod
+    def _getUserByEmailForAuth(cls, email: str):
+        """Like _getUserByEmail, but keeps passwordHash. Only call this from
+        the login code path that verifies it — never return the result
+        directly from an API endpoint."""
+        db = get_db()
+        user = db[cls.collectionName].find_one({"email": email})
+        if not user:
+            return None
+        user = cls._decryptUser(user)
+        user['_id'] = str(user['_id'])
+        return user
+
+    @classmethod
     def _serializeUser(cls, user: Dict) -> Dict:
-        """Serialize a document by decrypting sensitive fields."""
+        """Serialize a document by decrypting sensitive fields. Strips
+        passwordHash unconditionally — this is the path every public-facing
+        lookup goes through, so a password hash can never leak into an API
+        response by accident."""
         if not user:
             return None
         user['_id'] = str(user['_id'])
+        user.pop('passwordHash', None)
         return user
     
     @classmethod
@@ -162,25 +186,12 @@ class UserModel:
 
     @classmethod
     def _deductCredits(cls, email: str, amount: int, details: dict = None):
-        """Deduct credits from a user if they have enough, and record a transaction."""
-        db = get_db()
-        result = db[cls.collectionName].update_one(
-            {"email": email, "credits": {"$gte": amount}},
-            {"$inc": {"credits": -amount}}
-        )
-        success = result.modified_count > 0
-        if success:
-            try:
-                tx_record = {
-                    "userId": email,
-                    "type": "deduction",
-                    "amount": amount,
-                    "createdAt": datetime.now(timezone.utc),
-                    "details": details or {}
-                }
-                db["transactions"].insert_one(tx_record)
-            except Exception as e:
-                # Log transaction insertion failures, but don't crash the main deduction success flow
-                import logging
-                logging.getLogger(__name__).error(f"Failed to record transaction for {email}: {e}")
-        return success
+        """
+        No-op in this OSS build: there is no billing/credit system here — every
+        agent uses a credential the developer supplies themselves (BYOK), and GCP
+        compute cost is the operator's own cloud bill, not something this platform
+        meters or gates on. Always succeeds so every call site that still checks
+        the return value (kept for compatibility with the private/hosted build
+        this was forked from) never blocks.
+        """
+        return True

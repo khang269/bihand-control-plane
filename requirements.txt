@@ -4,6 +4,7 @@ pymongo
 python-dotenv
 pymongocrypt
 python-jose[cryptography]
+bcrypt
 google-auth
 google-auth-oauthlib
 google-cloud-compute
@@ -13,7 +14,6 @@ websockets
 pydantic
 python-multipart
 requests
-stripe
 celery
 redis
 PyJWT

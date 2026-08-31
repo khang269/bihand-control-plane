@@ -7,6 +7,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional, Literal
 
+import bcrypt
 from fastapi import APIRouter, HTTPException, Request, Header, Depends, status
 from pydantic import BaseModel, Field, model_validator, field_validator
 from google.oauth2 import id_token
@@ -59,8 +60,40 @@ def get_config():
 class GoogleTokenRequest(BaseModel):
     google_token: str = Field(..., description="The ID token received from Google Sign-In")
 
+class RegisterRequest(BaseModel):
+    email: str
+    password: str = Field(..., min_length=8, description="At least 8 characters")
+    name: Optional[str] = None
+
+    @field_validator("email")
+    @classmethod
+    def _lower_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("not a valid email address")
+        return v
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+    @field_validator("email")
+    @classmethod
+    def _lower_email(cls, v: str) -> str:
+        return v.strip().lower()
+
 # --- Create an APIRouter instance ---
 authRouter = APIRouter()
+
+# --- Password hashing (local auth provider — no Google account required) ---
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+def verify_password(password: str, password_hash: str) -> bool:
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
+    except (ValueError, TypeError):
+        return False
 
 # --- Helper Functions ---
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -100,6 +133,58 @@ async def get_current_user(request: Request):
     # Add original token to payload for easy access in the endpoint
     payload['_token'] = token
     return payload
+
+@authRouter.get("/config", summary="Which auth providers are configured")
+async def get_auth_config():
+    """
+    Tells the frontend which sign-in methods are actually usable. Local
+    email/password is always available — it's this build's default and needs
+    no external account. Google only appears once GOOGLE_CLIENT_ID is set.
+    """
+    config = get_config()
+    return {"local": True, "google": bool(config["GOOGLE_CLIENT_ID"])}
+
+def _role_for(email: str) -> str:
+    from fastapp.utils.adminAuth import ADMIN_EMAILS
+    return "admin" if email in ADMIN_EMAILS else "user"
+
+def _issue_token_response(email: str) -> Dict[str, Any]:
+    config = get_config()
+    role = _role_for(email)
+    access_token = create_access_token(
+        data={"sub": email, "email": email, "role": role},
+        expires_delta=timedelta(minutes=config["ACCESS_TOKEN_EXPIRE_MINUTES"]),
+    )
+    return {"access_token": access_token, "token_type": "bearer", "email": email, "role": role}
+
+@authRouter.post("/register", summary="Create a local account (email + password)", response_model=Dict[str, Any])
+async def register_local_user(req: RegisterRequest):
+    """
+    The default sign-up path for this build — no Google Cloud OAuth app to
+    register, no consent screen to configure. Creates the account and logs
+    the caller straight in.
+    """
+    if UserModel._getUserByEmail(req.email):
+        raise HTTPException(status_code=409, detail="An account with this email already exists. Try logging in instead.")
+
+    UserModel._createUser(
+        hash=generateHash(),
+        email=req.email,
+        name=req.name or req.email.split("@")[0],
+        avatar=f"https://ui-avatars.com/api/?name={req.name or req.email}&background=0D8ABC&color=fff",
+        authProviders=[{"provider": "credentials", "providerUserId": req.email}],
+        passwordHash=hash_password(req.password),
+    )
+    return _issue_token_response(req.email)
+
+@authRouter.post("/login", summary="Log in with email + password", response_model=Dict[str, Any])
+async def login_local_user(req: LoginRequest):
+    user = UserModel._getUserByEmailForAuth(req.email)
+    if not user or not user.get("passwordHash"):
+        raise HTTPException(status_code=401, detail="No local account with this email. Sign up first, or use Google sign-in if you registered that way.")
+    if not verify_password(req.password, user["passwordHash"]):
+        raise HTTPException(status_code=401, detail="Incorrect password.")
+    return _issue_token_response(req.email)
 
 @authRouter.get("/me", summary="Get current user profile")
 async def get_me(auth_payload: dict = Depends(get_current_user)):
@@ -186,7 +271,7 @@ async def exchange_google_token_for_jwt(
             )
 
         # 3. Determine user role
-        user_role = "admin" if user_email == config["ADMIN_USER"] else "user"
+        user_role = _role_for(user_email)
 
         # 4. Create a new JWT for our application
         access_token_expires = timedelta(minutes=config["ACCESS_TOKEN_EXPIRE_MINUTES"])
