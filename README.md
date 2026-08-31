@@ -2,17 +2,15 @@
 
 **Bihand** provisions and runs *fleets* of autonomous AI agents — CEO, CTO, engineer, support-rep, and more — as long-lived, cross-session "employees" inside isolated cloud workspaces, and gives a human org chart, task board, and audit trail to manage them by. It is a FastAPI + MongoDB + Celery control plane paired with a React dashboard.
 
-Built for the **[All Things Agentic Hackathon](https://allthingsagentichackathon.devpost.com/)** — **Fortified Enterprise Fleet** track.
-
-> This is a secrets-stripped, standalone snapshot of a larger private codebase, prepared for hackathon judging. **No Google account and no billing/credit system are required to use it** — log in with email + password, bring your own GCP project and LLM API key, and pay those providers directly; nothing here meters or gates on a credit balance. See [`ROADMAP.md`](./ROADMAP.md) for the maintainer's longer-term plan to grow this into a fully self-hostable community project — not yet executed, included to show the engineering thinking behind the architecture.
+> This is a secrets-stripped, standalone open-source release of a larger private codebase. **No Google account and no billing/credit system are required to use it** — log in with email + password, bring your own GCP project and LLM API key, and pay those providers directly; nothing here meters or gates on a credit balance. See [`ROADMAP.md`](./ROADMAP.md) for the maintainer's longer-term plan to grow this into a fully self-hostable community project — not yet executed, included to show the engineering thinking behind the architecture.
 
 ---
 
-## Why "Fortified Enterprise Fleet"
+## Enterprise-fleet security model
 
-The track asks for a scalable network of institutional agents that are cataloged for cross-department use, that safely maintain context across weeks of asynchronous operation, and that touch production data without violating enterprise security or compliance. Bihand's core data model *is* that:
+Bihand is built for institutional use: a scalable network of agents that are cataloged for cross-department use, that safely maintain context across weeks of asynchronous operation, and that touch production data without violating enterprise security or compliance. That's not a bolt-on — it's the core data model:
 
-| Track requirement | How Bihand does it |
+| Capability | How Bihand does it |
 |---|---|
 | **Agent Registry** — cataloging agents for cross-department use | Every agent is a document in `fleets`/`instances`, positioned on an org chart (`fleetModel`) with a role (CEO/CTO/worker/…), a runtime type, and a `reportsTo` chain — the whole roster is queryable and importable/exportable via CSV. |
 | **Agent Runtime** — long-running, async background execution | Agents run as full VMs/containers polling their own task queue (`agentM2MController`), not request/response chat turns; a task can sit `in_progress` for hours across multiple agent "shifts." |
@@ -24,10 +22,10 @@ The track asks for a scalable network of institutional agents that are cataloged
 
 ---
 
-## Required tech (this hackathon's checklist)
+## Google Cloud & Gemini integration
 
 - **Gemini** — the built-in LLM billing proxy (`fastapp/controllers/llmController.py`) force-maps every request to **`gemini-3.5-flash`** via the Gemini API; the Architecture Studio and Film Studio verticals call Gemini image/video models (`gemini-2.5-flash-image`, `veo-3.1-*`) directly.
-- **Google Agent Framework / GenAI SDK** — `google-genai` (the official Python GenAI SDK, `from google import genai`) is used throughout `fastapp/services/generationService.py`, `fastapp/utils/utils.py`, and `fastapp/tasks.py` for both the Gemini API and Vertex AI code paths.
+- **Google GenAI SDK** — `google-genai` (the official Python GenAI SDK, `from google import genai`) is used throughout `fastapp/services/generationService.py`, `fastapp/utils/utils.py`, and `fastapp/tasks.py` for both the Gemini API and Vertex AI code paths.
 - **Google Cloud infrastructure** — deployed as four containers on **GKE** (Uvicorn API, Celery worker, Celery beat, LiteLLM sidecar — see `cloudbuild.yaml`, `Dockerfile.api/.worker/.beat/.litellm`), built via **Cloud Build** and pushed to **Artifact Registry**; agent workloads themselves run as isolated **Compute Engine** VMs (`fastapp/services/gcpService.py`).
 
 ---
@@ -152,9 +150,9 @@ ROADMAP.md                Maintainer's plan for a fuller community open-source r
 
 ---
 
-## What's intentionally left out of this snapshot
+## What's intentionally left out of this release
 
-This is a hackathon-scoped copy of a larger private codebase. Removed for this submission (not because they're broken, but because they're out of scope for the Fortified Enterprise Fleet story, add friction a judge shouldn't have to deal with, and/or depend on infrastructure not included here): the Trading Studio vertical (needed a separate Cloud Run sandbox image not included), all Stripe/credit-purchase billing (the credit *system* itself is also disabled — see below), Kubernetes/Helm deployment manifests, and the vendored quant-trading engine the private repo also contains. Real, working credentials, a live API key, an admin-email backdoor, and a default OAuth client ID that existed in the private repo have all been removed or replaced with operator-configured environment variables — see the git history of this repo for the (single, clean) commit this was prepared in.
+This is a slimmed-down copy of a larger private codebase. Removed for this release (not because they're broken, but because they're out of scope, add friction a self-hoster shouldn't have to deal with, and/or depend on infrastructure not included here): the Trading Studio vertical (needed a separate Cloud Run sandbox image not included), all Stripe/credit-purchase billing (the credit *system* itself is also disabled — see below), Kubernetes/Helm deployment manifests, and the vendored quant-trading engine the private repo also contains. Real, working credentials, a live API key, an admin-email backdoor, and a default OAuth client ID that existed in the private repo have all been removed or replaced with operator-configured environment variables — see the git history of this repo for the (single, clean) commit this was prepared in.
 
 **No Google login, no credit gating.** The private codebase this was forked from required Google OAuth to sign in at all, and gated every provisioning action behind a Stripe-purchased credit balance. Neither survives in this build: sign-in defaults to a plain email/password form (`POST /api/auth/register` / `/login`, bcrypt-hashed, JWT-issued — Google stays available as an *optional* extra if you configure `GOOGLE_CLIENT_ID`), and every credit/balance check in `instanceController.py`, `fleetController.py`, `architectureController.py`, and `filmStudioController.py` has been removed (`UserModel._deductCredits` is now a no-op). Clone it, add your own GCP project and LLM key, and go — nothing here asks you to pay this platform for anything.
 
