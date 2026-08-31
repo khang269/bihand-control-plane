@@ -135,6 +135,74 @@ cd frontend && npm run lint && npm run build   # tsc -b && vite build -> fronten
 
 ---
 
+## Usage guide
+
+A walkthrough of what's actually behind the screenshots above — every step below was
+run for real against this repo's own live deployment, in this order.
+
+**1. Deploy a fleet.** From the dashboard, click **Deploy New Fleet** and give it a
+name and mission statement — this becomes the founding charter every agent in the
+fleet works from.
+
+**2. Build the org chart.** Add agents one at a time: pick a runtime (Claude Code,
+Codex, OpenClaw, OpenCode, …), a role and reporting line, and a provider for its LLM
+calls. **Bihand Provider** needs no key at all — it's the shared, unmetered
+model this build routes through the LiteLLM sidecar (see
+[`02-wizard-codex-bihand-provider.png`](./docs/screenshots/02-wizard-codex-bihand-provider.png));
+picking OpenAI/Anthropic/Custom instead asks for that provider's own credential.
+Each agent you add attaches to the tree — a CEO reporting to you, an Engineer
+reporting to the CEO, and so on
+([`03-wizard-org-chart-hierarchy.png`](./docs/screenshots/03-wizard-org-chart-hierarchy.png)).
+
+**3. Queue a first task (optional).** Give the top-level agent something to start on
+the moment it comes online, so there's real work waiting instead of an idle fleet
+([`04-wizard-first-task.png`](./docs/screenshots/04-wizard-first-task.png)).
+
+**4. Review and launch.** The final step totals the roster and estimated GCP compute
+cost, and confirms there's no billing gate in this build before you provision
+([`05-wizard-review-and-launch.png`](./docs/screenshots/05-wizard-review-and-launch.png)).
+Set a master dashboard password (used for the agents' VNC streams) and click
+**Provision & Launch** — this is the point a real GCP Compute VM gets created per agent.
+
+**5. Watch it come online.** The fleet control plane's navigation covers Org &
+Roster, the Ops Board, Governance, Automations, a live feed, cost ledger, and
+credential vault
+([`06-control-plane-navigation.png`](./docs/screenshots/06-control-plane-navigation.png)).
+The org chart updates live as each VM moves through real provisioning states —
+`provisioning` → `installing` → `running`
+([`07-org-chart-provisioning.png`](./docs/screenshots/07-org-chart-provisioning.png)) —
+and the Ops Board's M2M diagnostics panel tracks active staff, sync latency, and a
+live office audio log the whole time
+([`08-ops-board-m2m-diagnostics.png`](./docs/screenshots/08-ops-board-m2m-diagnostics.png)).
+Once every agent reports `running`, the fleet shows **Online** with every agent idle
+and polling for work
+([`09-fleet-online-agents-active.png`](./docs/screenshots/09-fleet-online-agents-active.png)).
+
+**6. Give it work.** Type an instruction into the Ops Board's command prompter and
+dispatch it — auto-assign routes it to the top-level agent, or target a specific one.
+Within moments the agent picks it up and starts executing autonomously
+([`10-agent-autonomously-working.png`](./docs/screenshots/10-agent-autonomously-working.png)).
+
+**7. Watch it delegate.** A manager agent that decides a task needs a specialist
+calls the same `delegate` M2M tool a human never has to touch — the parent task goes
+`blocked` waiting on the subtask it just created, while the assignee starts working it
+([`11-live-task-delegation.png`](./docs/screenshots/11-live-task-delegation.png)).
+Opening the task shows the full delegation pipeline and the exact requirements the
+manager handed down
+([`12-delegation-pipeline-detail.png`](./docs/screenshots/12-delegation-pipeline-detail.png)).
+
+**8. Audit everything.** The Live Feed is a real-time, append-only trail of every
+agent decision and tool call — including the literal `delegate` invocation and its
+arguments, not a paraphrase of one
+([`13-live-activity-audit-trail.png`](./docs/screenshots/13-live-activity-audit-trail.png)).
+
+**9. Back at the portal.** The top-level dashboard lists every fleet you run, its
+daily compute cost, and total active agents across all of them
+([`14-portal-dashboard.png`](./docs/screenshots/14-portal-dashboard.png)) — the
+starting point for deploying the next one.
+
+---
+
 ## Core workflows
 
 **Fleet provisioning** (`fleetModel` + `services/provisioning/`): a user defines an org chart and clicks deploy → the API validates and enqueues via Redis → a Celery worker creates a GCP Compute instance per agent, injects a bootstrap script via VM metadata (installs the chosen agent runtime — Claude Code, Codex, OpenClaw, …), and writes the encrypted connection details back to MongoDB.
