@@ -300,8 +300,7 @@ const ArchitectureStudio: React.FC = () => {
   const [viewSyncFraming, setViewSyncFraming] = useState<string>('default');
   const [viewSyncAtmosphere, setViewSyncAtmosphere] = useState<string>('default');
 
-  // Wallet and render status
-  const [credits, setCredits] = useState<number>(0);
+  // Render status
   const [history, setHistory] = useState<RenderRecord[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const prevSelectedTaskIdRef = useRef<string | null>(null);
@@ -344,16 +343,6 @@ const ArchitectureStudio: React.FC = () => {
     { id: "night", label: "Phối cảnh đêm" }
   ];
 
-  const fetchCredits = async () => {
-    try {
-      const res = await api.get('/architecture/credits');
-      setCredits(res.data?.credits || 0);
-    } catch (e) {
-      console.error(e);
-      setCredits(0);
-    }
-  };
-
   const fetchHistory = async () => {
     try {
       const res = await api.get('/architecture/history?limit=5&skip=0');
@@ -382,7 +371,6 @@ const ArchitectureStudio: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchCredits();
     fetchHistory();
   }, []);
 
@@ -463,9 +451,6 @@ const ArchitectureStudio: React.FC = () => {
               failureReason: taskData.failureReason
             } : t));
 
-            if (taskData.status === 'COMPLETED' || taskData.status === 'FAILED') {
-              fetchCredits();
-            }
           }
         } catch (e) {
           console.error(`Error polling background task ${task._id}:`, e);
@@ -876,12 +861,6 @@ const ArchitectureStudio: React.FC = () => {
           setHistory(prev => [mockTask, ...prev]);
           setSelectedTaskId(taskId);
 
-          if (res.data.newBalance !== undefined) {
-            setCredits(res.data.newBalance);
-          } else {
-            fetchCredits();
-          }
-          
           break; // Succeeded in starting task! Break the retry loop.
         } else {
           throw new Error(res.data.message || "Quá trình bắt đầu kết xuất không thành công.");
@@ -984,7 +963,6 @@ const ArchitectureStudio: React.FC = () => {
         if (outUrl) {
           setCreativeResults(prev => ({ ...prev, [angleId]: outUrl }));
         }
-        setCredits(res.data.newBalance);
         fetchHistory();
       } else {
         throw new Error(res.data.message || "Góc kết xuất không thành công.");
@@ -1061,8 +1039,8 @@ const ArchitectureStudio: React.FC = () => {
           <p className="text-xs text-muted-foreground mt-1">{t('arch.subtitle', 'Hệ sinh thái dựng hình AI, cải tạo nội thất và quy phim kiến trúc tối tân hàng đầu.')}</p>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary border border-border rounded-xl shadow-lg">
-          <Coins size={14} className="text-amber-500" />
-          <span className="text-sm font-bold">{t('arch.balance', 'Ví Bihand')}: <span className="text-amber-500">{credits}</span> 🪙</span>
+          <Coins size={14} className="text-emerald-500" />
+          <span className="text-sm font-bold">{t('arch.balance', 'BYOK — no billing')}</span>
         </div>
       </div>
 

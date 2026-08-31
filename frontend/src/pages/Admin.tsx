@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
   Settings, Users, Server, HardDrive, Trash2, Power, RotateCcw,
-  Play, Search, DollarSign, ArrowLeft, RefreshCw, Eye, MessageSquare,
+  Play, Search, ArrowLeft, RefreshCw, Eye, MessageSquare,
   AlertCircle
 } from 'lucide-react';
 import api from '../lib/api';
@@ -98,22 +98,6 @@ const Admin: React.FC = () => {
       setUsers([]);
     } finally {
       setIsTabLoading(false);
-    }
-  };
-
-  const addCredits = async (email: string) => {
-    const amount = prompt(`How many credits to add for ${email}?`);
-    if (!amount || isNaN(Number(amount))) return;
-
-    setActionInProgress(`credits:${email}`);
-    try {
-      await api.post(`/admin/users/${email}/credits`, { amount: Number(amount) });
-      alert('Credits successfully adjusted.');
-      searchUser();
-    } catch (e: any) {
-      alert(e.response?.data?.detail || e.message);
-    } finally {
-      setActionInProgress(null);
     }
   };
 
@@ -455,7 +439,6 @@ const Admin: React.FC = () => {
                           <tr>
                             <th className="px-4 py-3">User Email</th>
                             {!selectedUserEmail && <th className="px-4 py-3">Role</th>}
-                            <th className="px-4 py-4">Credits</th>
                             <th className="px-4 py-4 text-right">Actions</th>
                           </tr>
                         </thead>
@@ -469,14 +452,10 @@ const Admin: React.FC = () => {
                                   <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{u.email}</div>
                                 </td>
                                 {!selectedUserEmail && <td className="px-4 py-3 uppercase font-extrabold text-[9px] text-purple-600 dark:text-purple-400">{u.role}</td>}
-                                <td className="px-4 py-3 font-bold text-foreground">{u.credits || 0}</td>
                                 <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
                                   <div className="flex items-center justify-end gap-1">
                                     <button onClick={() => handleInspectUser(u.email)} className="p-1.5 text-muted-foreground hover:text-purple-500 hover:bg-secondary rounded-md" title="Inspect user fleets">
                                       <Eye size={14} />
-                                    </button>
-                                    <button onClick={() => addCredits(u.email)} className="p-1.5 text-muted-foreground hover:text-emerald-500 hover:bg-secondary rounded-md" title="Top-up credits">
-                                      <DollarSign size={14} />
                                     </button>
                                   </div>
                                 </td>

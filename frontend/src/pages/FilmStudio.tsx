@@ -854,8 +854,8 @@ const FilmStudio: React.FC = () => {
                 <Plus size={14} /> {t('film.create_project', 'Tạo dự án mới')}
               </Button>
               <Pill className="shadow-sm">
-                <Coins size={14} className="text-amber-500" />
-                <span className="text-sm font-bold text-foreground">{t('film.wallet', 'Ví:')} <span className="text-amber-500">{credits}</span> 🪙</span>
+                <Coins size={14} className="text-emerald-500" />
+                <span className="text-sm font-bold text-foreground">{t('film.wallet', 'BYOK — no billing')}</span>
               </Pill>
             </div>
           </div>
@@ -1152,8 +1152,8 @@ const FilmStudio: React.FC = () => {
                 <Plus size={14} /> Nhập tư liệu (AI Import)
               </Button>
               <Pill>
-                <Coins size={12} className="text-amber-500" />
-                <span className="text-xs font-bold text-foreground">{credits} 🪙</span>
+                <Coins size={12} className="text-emerald-500" />
+                <span className="text-xs font-bold text-foreground">BYOK</span>
               </Pill>
             </div>
           </div>

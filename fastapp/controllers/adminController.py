@@ -57,10 +57,6 @@ class KeyValidationRequest(BaseModel):
     provider: str
     apiKey: str
 
-class AddCreditRequest(BaseModel):
-    amount: int = Field(..., gt=0, description="Amount of credits to add")
-
-
 # --- User Search ---
 
 @adminRouter.get("/users", summary="Search users by name or email")
@@ -100,24 +96,6 @@ async def get_user_detail(
         "user": user,
         "instance": instance,
     }
-
-
-@adminRouter.post("/users/{email}/credits", summary="Add credits to a user (Admin backdoor)")
-async def add_user_credits(
-    email: str,
-    req: AddCreditRequest,
-    admin: dict = Depends(require_admin),
-):
-    """Admin backdoor to manually add credits to a user account."""
-    user = UserModel._getUserByEmail(email)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-        
-    success = UserModel._addCredits(email, req.amount)
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to add credits")
-        
-    return {"message": f"Successfully added {req.amount} credits to {email}"}
 
 
 @adminRouter.post("/validate-key", summary="Validate an LLM API key before provisioning")
