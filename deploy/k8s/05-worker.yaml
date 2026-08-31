@@ -1,0 +1,40 @@
+# The only process that needs the Compute Engine IAM role and firewall rule
+# described in DEPLOYMENT.md — it's the one making gcpService.py calls and
+# SSHing into agent VMs.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bihand-worker
+  namespace: bihand
+  labels:
+    service: bihand-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: bihand-worker
+  template:
+    metadata:
+      labels:
+        service: bihand-worker
+    spec:
+      serviceAccountName: bihand-ksa
+      containers:
+        - name: worker
+          image: <YOUR_REGION>-docker.pkg.dev/<YOUR_PROJECT_ID>/<YOUR_REPO>/bihand-worker:v1
+          imagePullPolicy: Always
+          env:
+            - name: REDIS_URL
+              value: redis://bihand-redis-service:6379/0
+          envFrom:
+            - secretRef:
+                name: bihand-secrets
+            - configMapRef:
+                name: bihand-config
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              cpu: "1"
+              memory: 2Gi

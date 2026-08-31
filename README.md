@@ -104,7 +104,13 @@ Open `http://localhost:5173` and sign up with any email + password — there's n
 
 ### 5. GCP-backed agent provisioning (optional)
 
-To actually spin up agent VMs rather than just explore the dashboard/API, add a credential for your LLM provider in the Credentials page, and set in `fastapp/.env`: `GOOGLE_CLOUD_PROJECT_ID`, `GCP_REGION`, `GCP_DEFAULT_ZONE`, and point `GOOGLE_APPLICATION_CREDENTIALS` at your own GCP service-account JSON with the Compute Engine API enabled. There is no credit/billing gate in front of this — GCP bills your own project directly. This repo's own test/prod deployment runs the same four images on **GKE** via `cloudbuild.yaml` + Kubernetes manifests (infra manifests are not included in this snapshot).
+To actually spin up agent VMs rather than just explore the dashboard/API, add a credential for your LLM provider in the Credentials page, and set in `fastapp/.env`: `GOOGLE_CLOUD_PROJECT_ID`, `GCP_REGION`, `GCP_DEFAULT_ZONE`, and point `GOOGLE_APPLICATION_CREDENTIALS` at your own GCP service-account JSON with the Compute Engine API enabled. There is no credit/billing gate in front of this — GCP bills your own project directly.
+
+**Two GCP project-setup steps are easy to miss and will otherwise cost you real debugging time** — a fresh project has neither by default: the service account needs Compute Engine IAM (`roles/compute.instanceAdmin.v1`), and your VPC needs a firewall rule for the tags agent VMs get created with, or provisioning will 403 immediately or silently wedge in `installing`. See **[`DEPLOYMENT.md`](./DEPLOYMENT.md)** for the exact commands and the failure signatures to recognize each by.
+
+### Deploying beyond your laptop
+
+This repo's own test/prod deployment runs the same four images (`cloudbuild.yaml`) on **GKE**. **[`DEPLOYMENT.md`](./DEPLOYMENT.md)** is the full guide — building/pushing images, the GCP IAM/firewall setup above, and ready-to-adapt manifests in `deploy/k8s/` for the whole stack (API, worker, beat, Redis, the LiteLLM sidecar, ingress).
 
 ### Production build / lint
 
@@ -144,6 +150,8 @@ frontend/
 docker-compose.test.yml   Local dev stack: mongo, redis, litellm, api, worker, beat
 Dockerfile.api / .worker / .beat / .litellm   The four images actually deployed to GKE
 cloudbuild.yaml           Cloud Build pipeline → Artifact Registry
+deploy/k8s/               GKE manifests (namespace, config/secret, redis, litellm, api, worker, beat, ingress)
+DEPLOYMENT.md             Full deployment guide — local and GKE, including GCP IAM/firewall setup + troubleshooting
 ARCHITECTURE.md           Full architecture diagram + write-up
 ROADMAP.md                Maintainer's plan for a fuller community open-source release
 ```
@@ -152,7 +160,9 @@ ROADMAP.md                Maintainer's plan for a fuller community open-source r
 
 ## What's intentionally left out of this release
 
-This is a slimmed-down copy of a larger private codebase. Removed for this release (not because they're broken, but because they're out of scope, add friction a self-hoster shouldn't have to deal with, and/or depend on infrastructure not included here): the Trading Studio vertical (needed a separate Cloud Run sandbox image not included), all Stripe/credit-purchase billing (the credit *system* itself is also disabled — see below), Kubernetes/Helm deployment manifests, and the vendored quant-trading engine the private repo also contains. Real, working credentials, a live API key, an admin-email backdoor, and a default OAuth client ID that existed in the private repo have all been removed or replaced with operator-configured environment variables — see the git history of this repo for the (single, clean) commit this was prepared in.
+This is a slimmed-down copy of a larger private codebase. Removed for this release (not because they're broken, but because they're out of scope, add friction a self-hoster shouldn't have to deal with, and/or depend on infrastructure not included here): the Trading Studio vertical (needed a separate Cloud Run sandbox image not included), all Stripe/credit-purchase billing (the credit *system* itself is also disabled — see below), the 3D avatar / sticker-service integration (an external microservice this repo doesn't include — see [`ROADMAP.md`](./ROADMAP.md)), and the vendored quant-trading engine the private repo also contains. Real, working credentials, a live API key, an admin-email backdoor, and a default OAuth client ID that existed in the private repo have all been removed or replaced with operator-configured environment variables — see the git history of this repo for the (single, clean) commit this was prepared in.
+
+Generic GKE manifests *are* included this time (`deploy/k8s/`, see [`DEPLOYMENT.md`](./DEPLOYMENT.md)) — the private repo's own Kubernetes manifests aren't (those reference infra specific to that deployment), but this snapshot ships adapt-and-apply ones instead of leaving self-hosters to write their own from scratch.
 
 **No Google login, no credit gating.** The private codebase this was forked from required Google OAuth to sign in at all, and gated every provisioning action behind a Stripe-purchased credit balance. Neither survives in this build: sign-in defaults to a plain email/password form (`POST /api/auth/register` / `/login`, bcrypt-hashed, JWT-issued — Google stays available as an *optional* extra if you configure `GOOGLE_CLIENT_ID`), and every credit/balance check in `instanceController.py`, `fleetController.py`, `architectureController.py`, and `filmStudioController.py` has been removed (`UserModel._deductCredits` is now a no-op). Clone it, add your own GCP project and LLM key, and go — nothing here asks you to pay this platform for anything.
 

@@ -1,0 +1,27 @@
+# Fronts bihand-api-service (port 80/8501) at your domain, and — since
+# run.py's catch-all route also serves the built frontend/dist SPA and its
+# /assets, /css, /js, /components static mounts — this one Ingress covers
+# the whole app, API included.
+#
+# TLS is left out on purpose: how you terminate it depends on your GKE
+# setup — a GKE ManagedCertificate + this Ingress's `kubernetes.io/ingress.class:
+# gce` annotation, cert-manager's Certificate + Ingress annotations, or a
+# TLS-terminating load balancer in front of this Ingress entirely. Add
+# whichever fits your cluster.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bihand-ingress
+  namespace: bihand
+spec:
+  rules:
+    - host: <YOUR_DOMAIN>
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: bihand-api-service
+                port:
+                  number: 80

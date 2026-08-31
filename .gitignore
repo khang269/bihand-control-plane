@@ -62,3 +62,6 @@ Thumbs.db
 
 # Scratch backtest run directories (sandbox/backtest_tool.py writes here)
 /runs/
+
+# Filled-in GKE secret env file — see deploy/k8s/secret.env.example
+deploy/k8s/secret.env

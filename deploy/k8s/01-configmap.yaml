@@ -1,0 +1,28 @@
+# Non-secret configuration, shared by the api/worker/beat/litellm containers
+# via envFrom. Fill in the placeholders and apply. See ../../.env.template
+# and ../../fastapp/.env.example for what each key does.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bihand-config
+  namespace: bihand
+data:
+  ENV: "prod"
+  LOG_LEVEL: "INFO"
+  PORT: "8501"
+  # Public URL this deployment is reachable at (matches the Ingress host below).
+  BIHAND_PUBLIC_API_URL: "https://<YOUR_DOMAIN>"
+  FRONTEND_URL: "https://<YOUR_DOMAIN>"
+  # Only needed if you provision real agent VMs — see ../../DEPLOYMENT.md.
+  GOOGLE_CLOUD_PROJECT_ID: "<YOUR_GCP_PROJECT_ID>"
+  GCP_REGION: "us-central1"
+  GCP_DEFAULT_ZONE: "us-central1-a"
+  GCS_BUCKET_NAME: "<YOUR_GCS_BUCKET>"
+  GOOGLE_REDIRECT_URI: "https://<YOUR_DOMAIN>/api/auth/google/callback"
+  # In-cluster LiteLLM sidecar (see 03-litellm.yaml) — leave as-is if you're
+  # using the bundled sidecar rather than an external LiteLLM instance.
+  LITELLM_PROXY_URL: "http://bihand-litellm-service:1234"
+  # Shared between this ConfigMap and the LiteLLM deployment's env — any
+  # value works, it just has to match on both sides. Not a real external
+  # credential; think of it as an internal password for the sidecar hop.
+  LITELLM_API_KEY: "sk-local-dev"

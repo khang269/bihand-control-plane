@@ -1,0 +1,42 @@
+# Exactly one replica, always — Celery Beat schedules periodic jobs, and a
+# second replica would double-fire them (duplicate provisioning-cleanup
+# runs, routines firing twice, etc).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bihand-beat
+  namespace: bihand
+  labels:
+    service: bihand-beat
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      service: bihand-beat
+  template:
+    metadata:
+      labels:
+        service: bihand-beat
+    spec:
+      serviceAccountName: bihand-ksa
+      containers:
+        - name: beat
+          image: <YOUR_REGION>-docker.pkg.dev/<YOUR_PROJECT_ID>/<YOUR_REPO>/bihand-beat:v1
+          imagePullPolicy: Always
+          env:
+            - name: REDIS_URL
+              value: redis://bihand-redis-service:6379/0
+          envFrom:
+            - secretRef:
+                name: bihand-secrets
+            - configMapRef:
+                name: bihand-config
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

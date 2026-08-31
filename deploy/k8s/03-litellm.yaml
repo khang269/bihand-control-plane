@@ -1,0 +1,57 @@
+# The Gemini-billing sidecar the "bihand" LLM provider option routes
+# through (see llmController.py). Optional: if you don't plan to offer that
+# provider to agents (BYOK direct to a real provider always works without
+# this), you can skip this file and LITELLM_PROXY_URL in the ConfigMap.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bihand-litellm
+  namespace: bihand
+  labels:
+    service: bihand-litellm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: bihand-litellm
+  template:
+    metadata:
+      labels:
+        service: bihand-litellm
+    spec:
+      containers:
+        - name: litellm
+          image: ghcr.io/berriai/litellm:main-stable
+          command: ["--model", "gemini/gemini-3.5-flash", "--port", "1234"]
+          ports:
+            - containerPort: 1234
+          env:
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bihand-secrets
+                  key: GOOGLE_API_KEY
+            - name: LITELLM_MASTER_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: bihand-config
+                  key: LITELLM_API_KEY
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bihand-litellm-service
+  namespace: bihand
+spec:
+  selector:
+    service: bihand-litellm
+  ports:
+    - port: 1234
+      targetPort: 1234
