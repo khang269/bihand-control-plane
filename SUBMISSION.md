@@ -10,6 +10,110 @@ Copy the sections below directly into the Devpost submission form.
 
 ---
 
+## Elevator pitch
+
+> Bihand hires AI agents as real employees — CEO, CTO, engineer, support rep — each
+> running for days on its own GCP VM with durable state and zero-trust identity, not
+> one more chatbot that forgets everything when the tab closes.
+
+A tighter, tagline-length cut if the field is character-limited:
+
+> The control plane that runs a company of AI agents — not a chat window, a payroll.
+
+---
+
+## Project story
+
+### Inspiration
+
+Every "AI agent" demo looks the same: open a chat window, type a goal, watch it think
+out loud, close the tab, lose everything. That's fine for a five-minute trick. It's not
+what "autonomous" is supposed to mean. We wanted to know what actually breaks the moment
+you take "agents that work in the background for days" literally — and it turns out
+almost none of it is prompting. It's the boring infrastructure nobody demos: who
+provisions the compute, who owns the agent's credentials, where does "what was this
+agent doing when it crashed" live, and how do you stop one compromised agent from acting
+as every other agent in the fleet. Bihand is what we built to answer those questions —
+an actual org chart of AI employees, not a chatbot with a system prompt.
+
+### What it does
+
+Bihand provisions and runs *fleets* of autonomous AI agents — CEO, CTO, engineer,
+support rep — as long-lived, cross-session "employees," each on its own isolated GCP
+Compute VM, running one of six agent runtimes (Claude Code, Codex, OpenClaw, OpenCode,
+Hermes, NemoClaw). A human designs the org chart and a task board in a React dashboard;
+agents pick up real work from that board over a dedicated machine-to-machine API, using
+their own per-instance identity token, and report back into a durable state machine that
+survives an agent restart, a crash, or a different agent picking up the same task
+mid-flight. Two more things ride the same "durable state + an agent acting on it
+asynchronously" shape: an inbound customer-support pipeline (Messenger/Zalo → an agent
+drafts or auto-sends a reply), and two Gemini/Veo-powered creative studios for generated
+imagery and video. Every credential — provider API keys, OAuth tokens, agent tokens — is
+protected with Client-Side Field Level Encryption before it ever reaches the database.
+
+### How we built it
+
+FastAPI + MongoDB + Celery + Redis on the backend, React 19 + TypeScript on the front,
+deployed as four containers to GKE via one Cloud Build pipeline. The core design
+decision is that agents never talk to the browser or each other directly — every
+interaction is mediated through the API, so MongoDB is always the single source of truth
+for what an agent is doing and why. Fleet provisioning is a strategy pattern (one class
+per agent runtime) that injects a bootstrap script via GCP VM metadata; the M2M protocol
+is a completely separate, token-authenticated surface from the human-facing JWT API, so
+an agent can never accidentally (or maliciously) act with a human's authority. For this
+submission specifically, we also did a full pass to make the repo something a judge can
+actually pick up and run: swapped the only-Google-account login for a default
+email/password flow, and removed every credit/billing gate across the codebase rather
+than just raising the limit — so a judge with their own GCP project and LLM key hits
+zero friction between `git clone` and using every feature.
+
+### Challenges we ran into
+
+The hardest part wasn't the happy path — it was making the *failure* paths trustworthy.
+An agent VM can die mid-task; the platform has to notice, put the task back in the
+queue, and let a different agent finish it without losing context, which meant treating
+the task-status state machine as the actual product surface, not an afterthought.
+Preparing this exact repo for open publication surfaced real findings the hard way: the
+private codebase we forked from had a live API key committed to a Docker Compose file, a
+hardcoded admin-email allowlist, and a hardcoded Google OAuth client ID shipped as a
+frontend fallback — all real, all fixed, all called out honestly in this repo's git
+history rather than swept under the rug. And once we removed the credit system, we found
+it had quietly been the *only* thing preventing an idle instance from running forever —
+so "remove billing" wasn't a one-line change, it meant re-checking every code path that
+had implicitly depended on it.
+
+### Accomplishments that we're proud of
+
+A judge can `git clone`, `docker compose up`, sign up with an email and password, add
+their own GCP project and Gemini key, and be running a real multi-agent fleet inside
+minutes — no Google Cloud OAuth app to register, no credit card, no "insufficient
+balance" wall anywhere in the product. We verified that claim isn't marketing copy: we
+booted the actual API against a real local MongoDB with zero external accounts
+configured, hit `/register` → `/login` → `/me` and confirmed a working session with no
+password hash leaking into the response, and made a real provisioning call with a fake
+API key to confirm it fails on key validation, not a 402 credit check.
+
+### What we learned
+
+The hard part of "autonomous agents" is almost entirely infrastructure, not prompting:
+durable state, credential scoping, and a real identity model for the agent mattered more
+for "operates with little to no hand-holding" than any prompt-engineering choice did. And
+a hosted product's login and billing model actively fights an open-source submission's
+usability — what's a sensible default for a paying SaaS customer (require an OAuth app,
+meter every action against a purchased balance) is exactly the friction that stops a
+judge from ever seeing the product work.
+
+### What's next for Bihand
+
+See `ROADMAP.md` for the long-form version, but the short list: pluggable Docker and
+Kubernetes agent-compute backends so the platform runs with zero cloud account at all for
+local development (GCP stays supported, just no longer the *only* option), a real
+automated test suite (there is currently none), and self-service account management
+(password reset, admin promotion through the UI) now that local accounts are the
+default sign-in path instead of an afterthought behind Google.
+
+---
+
 ## Text description
 
 Most "AI agents" today are a chat window with a system prompt. Bihand is a control
