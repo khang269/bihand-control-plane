@@ -114,6 +114,49 @@ default sign-in path instead of an afterthought behind Google.
 
 ---
 
+## Built with
+
+25 tags, prioritized so the required/bonus tech (Gemini, GenAI SDK, GCP infra, Veo) reads
+first — paste each as its own tag in Devpost's "Built With" field:
+
+```
+gemini, google-genai-sdk, vertex-ai, veo, google-cloud-platform,
+google-kubernetes-engine, compute-engine, cloud-build, python, fastapi,
+uvicorn, mongodb, client-side-field-level-encryption, celery, redis,
+litellm, docker, jwt, bcrypt, paramiko, websocket, react, typescript,
+vite, tailwindcss
+```
+
+| # | Tag | Why it's here |
+|---|---|---|
+| 1 | `gemini` | Every proxied inference call is force-mapped to `gemini-3.5-flash` |
+| 2 | `google-genai-sdk` | `google-genai` (`from google import genai`) — the official SDK, used directly |
+| 3 | `vertex-ai` | `generate_video_vertexai` and other `vertexai=True` code paths |
+| 4 | `veo` | Film Studio's video generation (`veo-3.1-*`) — bonus-points model integration |
+| 5 | `google-cloud-platform` | The umbrella platform this is built and deployed on |
+| 6 | `google-kubernetes-engine` | 4 images deployed to GKE via one Cloud Build pipeline |
+| 7 | `compute-engine` | Every agent runs as an isolated GCE VM |
+| 8 | `cloud-build` | `cloudbuild.yaml` — builds and pushes all 4 images |
+| 9 | `python` | Backend language |
+| 10 | `fastapi` | The stateless REST API framework |
+| 11 | `uvicorn` | ASGI server |
+| 12 | `mongodb` | Single source of truth / state machine |
+| 13 | `client-side-field-level-encryption` | Every stored credential is CSFLE-encrypted, not app-level bolted-on |
+| 14 | `celery` | Background worker + scheduler (beat) tier |
+| 15 | `redis` | Celery broker + WebSocket pub/sub |
+| 16 | `litellm` | OpenAI-compatible sidecar proxying to Gemini |
+| 17 | `docker` | Local dev stack + all 4 production images |
+| 18 | `jwt` | Human-facing session auth |
+| 19 | `bcrypt` | Local email/password hashing |
+| 20 | `paramiko` | SSH transport for agent VM bootstrap/file management |
+| 21 | `websocket` | Live fleet-activity + provisioning-log streaming |
+| 22 | `react` | Frontend framework (React 19) |
+| 23 | `typescript` | Frontend language |
+| 24 | `vite` | Frontend build tool |
+| 25 | `tailwindcss` | Frontend styling |
+
+---
+
 ## Text description
 
 Most "AI agents" today are a chat window with a system prompt. Bihand is a control
