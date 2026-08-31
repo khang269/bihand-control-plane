@@ -106,7 +106,7 @@ Open `http://localhost:5173` and sign up with any email + password — there's n
 
 To actually spin up agent VMs rather than just explore the dashboard/API, add a credential for your LLM provider in the Credentials page, and set in `fastapp/.env`: `GOOGLE_CLOUD_PROJECT_ID`, `GCP_REGION`, `GCP_DEFAULT_ZONE`, and point `GOOGLE_APPLICATION_CREDENTIALS` at your own GCP service-account JSON with the Compute Engine API enabled. There is no credit/billing gate in front of this — GCP bills your own project directly.
 
-**Two GCP project-setup steps are easy to miss and will otherwise cost you real debugging time** — a fresh project has neither by default: the service account needs Compute Engine IAM (`roles/compute.instanceAdmin.v1`), and your VPC needs a firewall rule for the tags agent VMs get created with, or provisioning will 403 immediately or silently wedge in `installing`. See **[`DEPLOYMENT.md`](./DEPLOYMENT.md)** for the exact commands and the failure signatures to recognize each by.
+**Two GCP project-setup steps are easy to miss and will otherwise cost you real debugging time** — a fresh project has neither by default: the service account needs Compute Engine IAM (`roles/compute.instanceAdmin.v1`), and GCP's auto-created `default` network — not whatever VPC your own control plane runs on; agent VMs land there regardless, it's hardcoded — needs a firewall rule for the tags agent VMs get created with, or provisioning will 403 immediately or silently wedge in `installing`. See **[`DEPLOYMENT.md`](./DEPLOYMENT.md)** for the exact commands and the failure signatures to recognize each by.
 
 ### Deploying beyond your laptop
 

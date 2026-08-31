@@ -89,16 +89,26 @@ Not using Workload Identity? Generate a JSON key instead
 pods, and set `GOOGLE_APPLICATION_CREDENTIALS` to its path — same as the
 local-dev pattern in `README.md`.
 
-**c. Open the ports agent VMs need to be reachable on:**
+**c. Open the ports agent VMs need to be reachable on — on the `default` network, not your VPC:**
 ```bash
 gcloud compute firewall-rules create agent-vm-allow-all-user-ports \
   --project=<PROJECT_ID> \
-  --network=<YOUR_VPC_NAME> \
+  --network=default \
   --direction=INGRESS --action=ALLOW \
   --rules=tcp:0-65535,udp:0-65535 \
   --source-ranges=0.0.0.0/0 \
   --target-tags=allow-all-user-ports
 ```
+
+`--network=default` is not a placeholder to swap for your own VPC — it must
+be GCP's own auto-created `default` network specifically. `gcpService.py`
+hardcodes `network_interface.name = "global/networks/default"` for every VM
+it creates; that string isn't read from config anywhere, so **every agent
+VM lands on the project's `default` network regardless of what VPC the
+control plane itself (GKE or otherwise) runs on.** A firewall rule attached
+to your own VPC — even with the right tag, ports, and source range — will
+silently match zero agent VMs. There's no way to point agent VMs at a
+custom VPC without editing that line in the code.
 
 ### 3. Apply the Kubernetes manifests
 
@@ -177,13 +187,25 @@ specifically need a stable address per agent.
 
 ### Instance stuck in `installing` forever
 
-**Cause:** no firewall rule matches the tags `gcpService.py` puts on every
-agent VM (`http-server`, `https-server`, `nemoclaw-dashboard`,
-`allow-all-user-ports`). A fresh GCP project's default network denies all
-unmatched inbound traffic. The VM's startup script is delivered via GCP
-metadata and needs no inbound networking, so it completes normally — but
-nothing outside the VM, including the control plane's own readiness check,
-can ever reach it afterward.
+**Cause — two mistakes, and the second one is easy to make even while
+fixing the first:**
+
+1. **No firewall rule matches the tags `gcpService.py` puts on every agent
+   VM** (`http-server`, `https-server`, `nemoclaw-dashboard`,
+   `allow-all-user-ports`). A fresh GCP project's default network denies
+   all unmatched inbound traffic. The VM's startup script is delivered via
+   GCP metadata and needs no inbound networking, so it completes normally —
+   but nothing outside the VM, including the control plane's own readiness
+   check, can ever reach it afterward.
+2. **The firewall rule gets attached to the wrong network.** If your
+   control plane (e.g. GKE) runs in its own custom VPC, it's natural to
+   attach the new rule there — but `gcpService.py` hardcodes
+   `network_interface.name = "global/networks/default"` for every VM it
+   creates. That's a literal string, not read from any config. Every agent
+   VM lands on the project's separate, GCP-auto-created `default` network
+   regardless of what network the control plane itself is on. A rule with
+   the exactly right tag, ports, and source range, but attached to your
+   custom VPC, matches zero agent VMs — it looks correct and does nothing.
 
 **How to confirm this is what's happening, not something else:**
 ```bash
@@ -198,25 +220,36 @@ gcloud compute instances get-serial-port-output <vm-name> --zone=<zone> --projec
 #    control plane's own readiness poll is doing — plain HTTP, not HTTPS,
 #    to dodge a GKE-network SSL-handshake stall.)
 curl -m 8 http://<vm-external-ip>/
+# Contrast with :22, which the network's own default allow-ssh rule always
+# opens regardless of your fix — if this connects but the ports above time
+# out, your rule isn't the reason :22 works, and isn't matching yet either.
+nc -zv -w5 <vm-external-ip> 22
+
+# 4. Which network is the VM actually on? (Confirms/denies mistake #2 above.)
+gcloud compute instances describe <vm-name> --zone=<zone> --project=<PROJECT_ID> \
+  --format="value(networkInterfaces[0].network)"
 ```
 If the task is still active, the serial console shows the startup script
-finished, and the `curl` times out — that's this bug, not a broken image or
-a bad agent runtime.
+finished, the plain-HTTP `curl` times out, and step 4 prints
+`.../networks/default` — check that whatever firewall rule you already
+created also targets `network=default`, not a custom VPC.
 
-**Fix:** create the firewall rule — step 2c above. It's deliberately wide
-(every TCP+UDP port, from anywhere) rather than a narrow allowlist: each
-agent is a coding-agent sandbox that can start a dev server or live preview
-on an unpredictable port (there's a named dashboard on `18789`, plus a
-generic "gateway" the code treats as dynamic), so there's no fixed port list
-to restrict this to without risking breaking that feature later. SSH access
-is separately gated by its own per-instance generated keypair regardless of
-this rule, and `target_tags` scopes the rule to exactly the VMs this feature
-creates — nothing else on your network is affected.
+**Fix:** create the firewall rule — step 2c above, `--network=default`
+specifically. It's deliberately wide (every TCP+UDP port, from anywhere)
+rather than a narrow allowlist: each agent is a coding-agent sandbox that
+can start a dev server or live preview on an unpredictable port (there's a
+named dashboard on `18789`, plus a generic "gateway" the code treats as
+dynamic), so there's no fixed port list to restrict this to without risking
+breaking that feature later. SSH access is separately gated by its own
+per-instance generated keypair regardless of this rule, and `target_tags`
+scopes the rule to exactly the VMs this feature creates — nothing else on
+the `default` network is affected.
 
-**Instances already wedged from before the rule existed won't self-recover**
-— the specific poll loop that's stuck for each of them isn't watching for a
-firewall change mid-flight. Delete and re-provision them once the rule is
-live.
+**Instances already wedged from before the rule existed (or while it was
+attached to the wrong network) won't self-recover** — the specific poll
+loop that's stuck for each of them isn't watching for a firewall change
+mid-flight. Delete and re-provision them once the rule is live on the right
+network.
 
 ### Quick reference
 
@@ -224,5 +257,5 @@ live.
 |---|---|---|
 | Provisioning fails immediately, `403 ... compute.instances.create` | Provisioning SA lacks Compute Engine IAM | Grant `roles/compute.instanceAdmin.v1` |
 | `Failed to allocate static IP ... falling back to ephemeral` | Same SA also lacks `compute.addresses.create` | Harmless — safe to ignore unless you need a stable IP |
-| Instance stuck in `installing`, serial console shows the startup script *did* finish | No firewall rule for the `allow-all-user-ports` tag | Create the firewall rule; re-provision any already-wedged instances |
+| Instance stuck in `installing`, serial console shows the startup script *did* finish | No firewall rule for the `allow-all-user-ports` tag, **or** the rule exists but targets your custom VPC instead of `default` | Create/move the rule to `--network=default` — `gcpService.py` hardcodes agent VMs onto that network regardless of what network the control plane runs on. Re-provision any already-wedged instances. |
 | Instance stuck in `installing`, and the provisioning task is no longer in `celery inspect active` | The Celery task died (worker crash/OOM/restart), not hung | Check worker pod logs/restarts; re-provision |
