@@ -210,6 +210,26 @@ UI — is what this project builds.
 - **Two generative-AI studios** built directly on the Gemini/Veo APIs (Architecture
   Studio for image generation, Film Studio for video) — included in this snapshot
   because they're this codebase's most direct example of the required GenAI SDK usage.
+- **Trading Studio** — a third vertical, and the sharpest security example in the repo:
+  an LLM agent writes and backtests its own trading strategy from a free-text prompt,
+  but the strategy code it writes never runs anywhere near a real credential. The whole
+  flow executes in a separate Cloud Run Job whose service account is granted no IAM
+  roles at all; every LLM call and the final result cross back into the trusted API
+  through two token-authenticated callback endpoints that treat the request as hostile
+  input by default.
+
+## Screenshots
+
+Captured on this repo's own live deployment — a real two-agent fleet (CEO → Engineer,
+both on Codex + the Bihand Provider, no key needed) taken from wizard through to live
+autonomous task delegation. Full set with captions in
+[`docs/screenshots/`](./docs/screenshots/README.md).
+
+| | |
+|---|---|
+| ![Codex + Bihand Provider](./docs/screenshots/02-wizard-codex-bihand-provider.png) Codex runtime, Bihand Provider | ![Org chart](./docs/screenshots/03-wizard-org-chart-hierarchy.png) Board → CEO → Engineer hierarchy |
+| ![Live provisioning](./docs/screenshots/07-org-chart-provisioning.png) Real GCP VM states, live | ![Autonomous delegation](./docs/screenshots/11-live-task-delegation.png) CEO delegating to Engineer, live |
+| ![Delegation pipeline](./docs/screenshots/12-delegation-pipeline-detail.png) The delegation pipeline, task detail | ![Audit trail](./docs/screenshots/13-live-activity-audit-trail.png) The actual `delegate` tool call, in the audit log |
 
 ## Technologies used
 
