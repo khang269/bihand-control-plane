@@ -6,8 +6,7 @@ import {
   Cpu, Coffee, Activity
 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { useAvatar } from '../lib/avatarCache';
-import { AvatarImage } from './AvatarImage';
+import { Avatar } from './Avatar';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import OrgChartFlow from './OrgChartFlow';
@@ -34,7 +33,6 @@ interface Instance {
   id: string;
   role: string;
   alias?: string;
-  avatarHash?: string;
   status: string;
   reportsTo?: string | null;
 }
@@ -1054,7 +1052,7 @@ const TasksView: React.FC<TasksViewProps> = ({ fleetId, compact = false }) => {
                           <span className="text-xs font-mono font-bold text-foreground">
                             {assignee ? assignee.role : 'Unassigned Pool'}
                           </span>
-                          <AvatarImage hash={assignee?.avatarHash} className="w-6 h-6 rounded-md object-cover border border-border" fallbackSize={12} />
+                          <Avatar name={assignee?.role} className="w-6 h-6 rounded-md object-cover border border-border" fallbackSize={12} />
                         </div>
 
                         <ArrowUpRight size={16} className="text-muted-foreground group-hover:text-foreground transition-colors group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -1196,8 +1194,6 @@ const DeskItem: React.FC<{
   isSelected: boolean;
   onClick: () => void;
 }> = ({ inst, act, isSelected, onClick }) => {
-  const { glbSrc } = useAvatar(inst.avatarHash);
-  
   const statusConfig = {
     busy: { border: 'border-blue-500/30', bg: 'bg-blue-500/5 animate-pulse', barColor: 'bg-blue-500', emote: '💻', stateName: 'Deep Focus' },
     waiting: { border: 'border-amber-500/30', bg: 'bg-amber-500/5', barColor: 'bg-amber-500', emote: '⏳', stateName: 'Syncing Files' },
@@ -1224,34 +1220,13 @@ const DeskItem: React.FC<{
       }`} />
 
       <div className="flex gap-4 items-stretch min-h-[110px]">
-        {/* Holographic Projection Pad for 3D Mesh */}
+        {/* Agent avatar + state badge */}
         <div className="w-24 h-28 shrink-0 relative bg-muted/50 rounded-lg overflow-hidden border border-border shadow-inner flex flex-col items-center justify-center p-1">
-          {/* Virtual projector light emitter */}
-          <div className="absolute top-1 left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-500/10 rounded-full blur-[2px]" />
-
           <div className="w-full flex-1 relative flex items-center justify-center">
-            {glbSrc ? (
-              React.createElement('model-viewer', {
-                src: glbSrc,
-                'camera-controls': 'false',
-                'auto-rotate': 'true',
-                style: { width: '100%', height: '100%', background: 'transparent', display: 'block' },
-                alt: inst.role,
-                'shadow-intensity': "1",
-                'interaction-prompt': "none",
-                'auto-rotate-delay': "100"
-              } as any)
-            ) : (
-              <div className="text-[9px] text-muted-foreground/70 font-mono animate-pulse">BOOTING 3D...</div>
-            )}
-
-            {/* Radar / Sonar pulse at base of the model */}
-            <div className="absolute bottom-1 w-16 h-2 bg-blue-500/5 rounded-full border border-blue-500/10 flex items-center justify-center">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping" />
-            </div>
+            <Avatar name={inst.role} className="w-14 h-14 rounded-lg" fallbackSize={24} />
           </div>
 
-          {/* Holographic state sub-badge */}
+          {/* State sub-badge */}
           <div className="w-full border-t border-border pt-1 flex items-center justify-center gap-1 bg-muted/30">
             <span className="text-[10px]">{statusConfig.emote}</span>
             <span className="text-[8px] font-mono font-bold text-muted-foreground tracking-tight uppercase">{statusConfig.stateName}</span>

@@ -25,18 +25,6 @@ const Incorporate: React.FC = () => {
   const { t, language } = useLanguage();
   const onBehalfOf = useMemo(() => new URLSearchParams(window.location.search).get('email'), []);
   const [activeStep, setActiveStep] = useState(1);
-  const [avatarLibrary, setAvatarLibrary] = useState<any[]>([]);
-
-  useEffect(() => {
-    api.get('/avatar/library')
-      .then(res => {
-        if (res.data && res.data.library) {
-          setAvatarLibrary(res.data.library);
-        }
-      })
-      .catch(err => console.error('Failed to load avatar library:', err));
-  }, []);
-  
   // Fleet configuration
   const [fleetName, setFleetName] = useState('');
   const fleetPlan: string = 'custom';
@@ -122,7 +110,6 @@ const Incorporate: React.FC = () => {
               machineType: ag.machineType || 'e2-small',
               reportsTo: ag.reportsTo || null,
               enabledSkills: ag.enabledSkills || ['bihand'],
-              avatarHash: ag.avatarHash || null,
               skillsFiles: ag.skillsFiles || ag.customSkills || [],
               customAgentMd: ag.customAgentMd || ag.agentMd || ''
             };
@@ -325,8 +312,7 @@ const Incorporate: React.FC = () => {
         role: ag.role,
         agentType: ag.agentType,
         status: 'provisioned',
-        reportsTo: ag.reportsTo,
-        avatarHash: ag.avatarHash
+        reportsTo: ag.reportsTo
       }))
     };
   }, [agents]);
@@ -383,7 +369,6 @@ const Incorporate: React.FC = () => {
           durationDays: ag.durationDays || 30, // Include the selected duration
           reportsTo: ag.reportsTo,
           enabledSkills: ag.enabledSkills || [],
-          avatarHash: ag.avatarHash,
           skillsFiles: ag.skillsFiles || [],
           customAgentMd: ag.customAgentMd || ''
         })),
@@ -603,7 +588,6 @@ const Incorporate: React.FC = () => {
             .map((ag) => ({ id: ag.id, role: ag.role, title: ag.title }))
             .filter((_, i) => editingAgentIndex === null || i !== editingAgentIndex)}
           credentialsOverride={combinedCredentials}
-          avatarLibraryOverride={avatarLibrary}
           initialAgent={editingAgentIndex !== null ? agents[editingAgentIndex] : null}
           submitLabel={editingAgentIndex !== null ? { en: 'Save Changes', vi: 'Lưu thay đổi' } : { en: 'Add to Roster', vi: 'Thêm vào Đội hình' }}
           isSubmitting={false}

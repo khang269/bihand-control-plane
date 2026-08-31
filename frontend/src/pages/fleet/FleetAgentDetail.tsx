@@ -16,8 +16,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { AGENT_TEMPLATES, SKILL_TEMPLATES } from '../../lib/templates';
 import AgentLogsModal from '../../components/AgentLogsModal';
 import TerminalPanel from '../../components/TerminalPanel';
-import { useAvatar } from '../../lib/avatarCache';
-import { AvatarImage } from '../../components/AvatarImage';
+import { Avatar } from '../../components/Avatar';
 import { cn } from '../../lib/cn';
 import { Button, Card, Input, Textarea, Select, Modal } from '../../components/ui';
 
@@ -76,23 +75,6 @@ interface InstructionFile {
   name: string;
   content: string;
 }
-
-const ModelViewerContainer: React.FC<{ avatarHash: string }> = ({ avatarHash }) => {
-  const { glbSrc } = useAvatar(avatarHash);
-  if (!glbSrc) {
-    return <div className="w-full h-full bg-secondary animate-pulse flex items-center justify-center text-xs text-muted-foreground">Loading 3D asset into memory...</div>;
-  }
-  return React.createElement('model-viewer', {
-    src: glbSrc,
-    'camera-controls': 'true',
-    'auto-rotate': 'true',
-    style: { width: '100%', height: '100%', background: 'transparent', display: 'block' },
-    alt: "3D Humanoid Agent Avatar",
-    'shadow-intensity': "1",
-    'interaction-prompt': "auto",
-    'auto-rotate-delay': "1000"
-  } as any);
-};
 
 const FleetAgentDetail: React.FC = () => {
   const { fleetId, instanceId } = useParams<{ fleetId: string; instanceId: string }>();
@@ -978,15 +960,6 @@ const FleetAgentDetail: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {instance?.avatarHash && (
-          <Card className="flex flex-col h-[320px] lg:col-span-2">
-            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2 font-mono">3D Humanoid Agent Avatar</div>
-            <div className="flex-1 min-h-0 relative rounded-lg bg-black/40 overflow-hidden border border-border">
-              <ModelViewerContainer avatarHash={instance.avatarHash} />
-            </div>
-          </Card>
-        )}
-
         <Card>
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2">Latest Run</div>
           <div className="text-lg font-semibold text-foreground">{instance.status.replace('_', ' ')}</div>
@@ -2029,8 +2002,8 @@ const FleetAgentDetail: React.FC = () => {
       <div className="mb-6 flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <AvatarImage
-              hash={instance?.avatarHash}
+            <Avatar
+              name={instance?.role}
               className="w-12 h-12 rounded-lg overflow-hidden bg-secondary flex items-center justify-center text-foreground border border-border"
               fallbackSize={28}
             />

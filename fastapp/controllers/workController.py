@@ -405,7 +405,6 @@ async def get_task_detail(fleet_id: str, task_id: str, auth_payload: dict = Depe
         if inst:
             task["assigneeRole"] = inst.get("fleetRole", inst.get("role", "Agent"))
             task["assigneeTitle"] = inst.get("title", inst.get("alias", "Employee"))
-            task["assigneeAvatarHash"] = inst.get("avatarHash")
             task["assigneeIp"] = inst.get("externalIp")
             task["assigneeAgentType"] = inst.get("iteration", "openclaw")
             task["assigneeToken"] = inst.get("dashboardToken")

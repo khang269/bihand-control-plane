@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Building2, PlusCircle, LayoutDashboard, LogOut, ChevronDown, ChevronRight, Inbox, CircleDot, Repeat, Target, Bot, Network, DollarSign, Lock, Activity, Settings as SettingsIcon, Video } from 'lucide-react';
 import api from '../lib/api';
-import { useAvatar } from '../lib/avatarCache';
 import { cn } from '../lib/cn';
 import { IconBadge } from './ui/IconBadge';
 import { ThemeToggle } from './ui/ThemeToggle';
@@ -17,18 +16,9 @@ const navLinkClass = (active: boolean) =>
   );
 
 const AgentSidebarLink: React.FC<{ agent: any; activeFleetId: string; locationPath: string }> = ({ agent, activeFleetId, locationPath }) => {
-  const { thumbnailSrc } = useAvatar(agent.avatarHash);
   return (
     <Link to={`/fleet/${activeFleetId}/agents/${agent.id}`} className={navLinkClass(locationPath.includes(agent.id))}>
-      {agent.avatarHash ? (
-        thumbnailSrc ? (
-          <img src={thumbnailSrc} alt="Avatar" className="w-4 h-4 rounded-full object-cover border border-border" />
-        ) : (
-          <div className="w-4 h-4 rounded-full bg-secondary border border-border" />
-        )
-      ) : (
-        <Bot size={16} />
-      )}
+      <Bot size={16} />
       {agent.role}
     </Link>
   );

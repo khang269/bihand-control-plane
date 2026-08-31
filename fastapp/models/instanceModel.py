@@ -104,7 +104,6 @@ class InstanceModel:
         title: str = "Employee",
         mcpConfig: str = "{\n  \"mcpServers\": {}\n}",
         enabledSkills: Optional[List[str]] = None,
-        avatarHash: Optional[str] = None,
         skillsFiles: Optional[List[Dict]] = None,
         oauthToken: Optional[str] = None,
         customBaseUrl: Optional[str] = None,
@@ -148,7 +147,6 @@ class InstanceModel:
             "adapterConfig": {},
             "enabledSkills": enabledSkills or [],
             "skillsFiles": skillsFiles or [],
-            "avatarHash": avatarHash,
             "createdBy": createdBy,
             "createdDate": currentTime,
             "updatedDate": currentTime,
@@ -255,15 +253,6 @@ class InstanceModel:
         db[cls.collectionName].update_one(
             {"_id": ObjectId(instanceId)},
             {"$set": update_fields}
-        )
-
-    @classmethod
-    def _updateAvatarHash(cls, instanceId: str, avatarHash: Optional[str]):
-        """Update avatar hash of an instance."""
-        db = get_db()
-        db[cls.collectionName].update_one(
-            {"_id": ObjectId(instanceId)},
-            {"$set": {"avatarHash": avatarHash, "updatedDate": datetime.now(timezone.utc)}}
         )
 
     @classmethod

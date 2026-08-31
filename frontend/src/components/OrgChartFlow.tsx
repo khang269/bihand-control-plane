@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { Background, Controls, ReactFlow, Node, Edge, Handle, Position } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Bot, UserRound } from 'lucide-react';
-import { useAvatar } from '../lib/avatarCache';
 
 interface CustomNodeProps {
   data: {
@@ -10,7 +9,6 @@ interface CustomNodeProps {
     subLabel: string;
     status: string;
     isHuman?: boolean;
-    avatarHash?: string | null;
     activity?: {
       activeTask: any;
       status: 'idle' | 'busy' | 'waiting' | 'reviewing';
@@ -22,12 +20,10 @@ interface CustomNodeProps {
 
 const OrgNodeComponent = ({ data }: CustomNodeProps) => {
   const isOnline = data.status === 'running' || data.status === 'provisioned';
-  const { thumbnailSrc, glbSrc } = useAvatar(data.avatarHash);
-  const has3D = !data.isHuman && data.avatarHash;
   const activity = data.activity;
 
   return (
-    <div className={`bg-card border border-border rounded-lg p-3 shadow-xl relative flex items-stretch ${has3D ? 'min-w-[340px] h-[110px] justify-between' : 'min-w-[200px] h-[85px]'}`}>
+    <div className="bg-card border border-border rounded-lg p-3 shadow-xl relative flex items-stretch min-w-[200px] h-[85px]">
       {!data.isHuman && (
         <Handle
           type="target"
@@ -50,8 +46,6 @@ const OrgNodeComponent = ({ data }: CustomNodeProps) => {
           <div className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center shrink-0 ${data.isHuman ? 'bg-blue-500/20 text-blue-500' : 'bg-muted text-muted-foreground border border-border'}`}>
             {data.isHuman ? (
               <UserRound size={24} />
-            ) : thumbnailSrc ? (
-              <img src={thumbnailSrc} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
               <Bot size={24} />
             )}
@@ -72,24 +66,6 @@ const OrgNodeComponent = ({ data }: CustomNodeProps) => {
         )}
       </div>
 
-      {has3D && (
-        <div className="w-24 h-full border-l border-border/80 flex-shrink-0 relative bg-muted/40 rounded-r-lg overflow-hidden">
-          {glbSrc ? (
-            React.createElement('model-viewer', {
-              src: glbSrc,
-              'camera-controls': 'true',
-              'auto-rotate': 'true',
-              style: { width: '100%', height: '100%', background: 'transparent', display: 'block' },
-              alt: "3D Humanoid Agent Avatar",
-              'shadow-intensity': "1",
-              'interaction-prompt': "auto",
-              'auto-rotate-delay': "1000"
-            } as any)
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground font-mono select-none">Loading 3D...</div>
-          )}
-        </div>
-      )}
 
       <Handle
         type="source"
@@ -180,7 +156,6 @@ const OrgChartFlow: React.FC<OrgChartProps & { onNodeClick?: (nodeId: string) =>
           label: inst.role,
           subLabel: inst.agentType,
           status: inst.status,
-          avatarHash: inst.avatarHash,
           activity: activity
         }
       });

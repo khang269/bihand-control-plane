@@ -243,10 +243,6 @@ async def parse_roster_file(file: UploadFile = File(...), auth_payload: dict = D
         if machine_type not in ['e2-small', 'e2-medium', 'e2-standard-2']:
             machine_type = 'e2-small'
             
-        avatar_hash = str(raw.get('avatarhash', '')).strip()
-        if not avatar_hash:
-            avatar_hash = None
-                
         # Parse comma-separated list of skill names/slugs
         skills_raw = str(raw.get('skills', raw.get('enabledskills', raw.get('enabled_skills', '')))).strip()
         listed_skills = [s.strip() for s in skills_raw.split(',') if s.strip()] if skills_raw else ['bihand']
@@ -343,7 +339,6 @@ async def parse_roster_file(file: UploadFile = File(...), auth_payload: dict = D
             "machineType": machine_type,
             "reportsTo": str(raw.get('reportsto', '')).strip(),
             "enabledSkills": agent_enabled_system_skills,
-            "avatarHash": avatar_hash,
             "skillsFiles": custom_skills_list,
             "customAgentMd": user_custom_instructions
         })
@@ -414,7 +409,6 @@ class AgentConfig(BaseModel):
     skillsFiles: Optional[List[Dict[str, str]]] = Field(default=[], description="Custom skill files with name and content")
     durationMonths: int = Field(default=1, description="Duration in months for this agent")
     durationDays: Optional[int] = Field(default=30, description="Duration in days for fine-grained tryout packages")
-    avatarHash: Optional[str] = Field(default=None, description="The 3D avatar model hash")
 
 class UpdateBudgetRequest(BaseModel):
     apiBudget: float = Field(..., description="New Monthly API Spend limit (USD)")
@@ -2330,7 +2324,6 @@ async def add_fleet_agent(fleet_id: str, req: AddAgentRequest, auth_payload: dic
         toolsMd=ag.toolsMd or "",
         mcpConfig=ag.mcpConfig or "",
         enabledSkills=ag.enabledSkills or [],
-        avatarHash=ag.avatarHash,
         skillsFiles=ag.skillsFiles or [],
         oauthToken=ag.oauthToken or None,
         customBaseUrl=ag.customBaseUrl or None,
@@ -2661,7 +2654,6 @@ async def get_fleet(fleet_id: str, auth_payload: dict = Depends(get_current_user
             "ip": inst.get("externalIp", ""),
             "reportsTo": inst.get("reportsTo", None),
             "agentType": inst.get("iteration", ""),
-            "avatarHash": inst.get("avatarHash", None),
             "machineType": inst.get("machineType", "e2-small"),
             "token": inst.get("dashboardToken", ""),
             "agentMd": inst.get("agentMd", ""),

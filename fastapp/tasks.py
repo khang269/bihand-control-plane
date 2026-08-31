@@ -608,7 +608,6 @@ def provision_fleet_task(self, fleet_id: str, user_id: str, password: str):
                 toolsMd=agent.get("toolsMd", ""),
                 mcpConfig=agent.get("mcpConfig", ""),
                 enabledSkills=agent.get("enabledSkills", []),
-                avatarHash=agent.get("avatarHash"),
                 skillsFiles=agent.get("skillsFiles", []),
                 oauthToken=agent.get("oauthToken") or None,
                 customBaseUrl=agent.get("customBaseUrl") or None,

@@ -5,7 +5,6 @@ export interface FleetAgentInstance {
   role?: string;
   title?: string;
   status?: string;
-  avatarHash?: string | null;
   [key: string]: unknown;
 }
 

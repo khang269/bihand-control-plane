@@ -5,13 +5,12 @@ import OrgChartFlow from '../../components/OrgChartFlow';
 import AgentLogsModal from '../../components/AgentLogsModal';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../lib/api';
-import { AvatarImage } from '../../components/AvatarImage';
+import { Avatar } from '../../components/Avatar';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Input, Select } from '../../components/ui/Input';
-import { cn } from '../../lib/cn';
 
 const FleetOrgChart: React.FC = () => {
   const { fleetId } = useParams<{ fleetId?: string }>();
@@ -35,19 +34,11 @@ const FleetOrgChart: React.FC = () => {
   const [newAgentMachineType, setNewAgentMachineType] = useState('e2-small'); // Default to e2-small
   const [isAddingAgent, setIsAddingAgent] = useState(false);
   const [existingCredentials, setExistingCredentials] = useState<any[]>([]);
-  const [newAgentAvatarHash, setNewAgentAvatarHash] = useState('99d68008c17ea62c9c497582b58dc8b3'); // default to robot
-  const [avatarLibrary, setAvatarLibrary] = useState<any[]>([]);
-  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
-  const [avatarModalSearch, setAvatarModalSearch] = useState('');
 
   useEffect(() => {
     if (isAddModalOpen) {
       api.get('/credentials')
         .then(res => setExistingCredentials(res.data.credentials || []))
-        .catch(console.error);
-
-      api.get('/avatar/library')
-        .then(res => setAvatarLibrary(res.data.library || []))
         .catch(console.error);
     }
   }, [isAddModalOpen]);
@@ -130,8 +121,7 @@ const FleetOrgChart: React.FC = () => {
           soulMd: "",
           toolsMd: "",
           mcpConfig: "",
-          enabledSkills: [],
-          avatarHash: newAgentAvatarHash || null
+          enabledSkills: []
         }
       });
       setIsAddModalOpen(false);
@@ -144,7 +134,6 @@ const FleetOrgChart: React.FC = () => {
       setNewAgentReportsTo('');
       setNewAgentDurationDays(30);
       setNewAgentMachineType('e2-small');
-      setNewAgentAvatarHash('99d68008c17ea62c9c497582b58dc8b3');
       fetchFleetDetails();
     } catch (err: any) {
       alert(err.response?.data?.detail || "Failed to add agent to fleet.");
@@ -215,8 +204,8 @@ const FleetOrgChart: React.FC = () => {
           return (
             <Card key={inst.id} className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <AvatarImage
-                  hash={inst.avatarHash}
+                <Avatar
+                  name={inst.role}
                   className="w-12 h-12 rounded-full overflow-hidden bg-secondary flex items-center justify-center text-muted-foreground border border-border"
                   fallbackSize={24}
                 />
@@ -456,34 +445,6 @@ const FleetOrgChart: React.FC = () => {
             </div>
           )}
 
-          <div>
-            <label className="block text-xs font-semibold uppercase text-muted-foreground mb-1.5">3D Avatar Representation</label>
-            <button
-              type="button"
-              onClick={() => setIsAvatarModalOpen(true)}
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-left text-foreground hover:border-ring transition-colors flex items-center justify-between"
-            >
-              <span className="truncate">
-                {avatarLibrary.find(a => a.hash === newAgentAvatarHash)?.title || "Select 3D Avatar Model..."}
-              </span>
-              <span className="text-xs text-blue-500 font-semibold uppercase font-mono">Choose Avatar ➔</span>
-            </button>
-            {newAgentAvatarHash && (
-              <div className="mt-2 flex items-center gap-3 bg-secondary/30 p-2.5 rounded-lg border border-border">
-                <AvatarImage
-                  hash={newAgentAvatarHash}
-                  className="w-12 h-12 rounded bg-background object-cover border border-border shrink-0"
-                />
-                <div className="text-[10px] text-muted-foreground leading-snug text-left">
-                  <span className="font-semibold text-foreground block text-sm">
-                    {avatarLibrary.find(a => a.hash === newAgentAvatarHash)?.title || 'Selected Avatar'}
-                  </span>
-                  {avatarLibrary.find(a => a.hash === newAgentAvatarHash)?.description}
-                </div>
-              </div>
-            )}
-          </div>
-
           <div className="pt-4 flex items-center justify-end gap-3 border-t border-border">
             <Button
               type="button"
@@ -501,116 +462,6 @@ const FleetOrgChart: React.FC = () => {
             </Button>
           </div>
         </form>
-      </Modal>
-
-      {/* 3D Avatar Selection Modal Overlay */}
-      <Modal
-        open={isAvatarModalOpen}
-        onClose={() => {
-          setIsAvatarModalOpen(false);
-          setAvatarModalSearch('');
-        }}
-        widthClassName="max-w-4xl"
-      >
-        <div className="pr-8 mb-4">
-          <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-            ✨ Select 3D Humanoid Avatar Representation
-          </h3>
-          <p className="text-xs text-muted-foreground mt-1">Select a high-quality 3D avatar character to link as the workspace avatar for your new agent.</p>
-        </div>
-
-        <div className="mb-4">
-          <Input
-            type="text"
-            placeholder="Search avatars by name or description..."
-            value={avatarModalSearch}
-            onChange={e => setAvatarModalSearch(e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              setNewAgentAvatarHash('');
-              setIsAvatarModalOpen(false);
-              setAvatarModalSearch('');
-            }}
-            className={cn(
-              'p-3 rounded-xl border text-left flex flex-col justify-between items-start transition-all hover:bg-secondary',
-              newAgentAvatarHash === ''
-                ? 'border-pink-500 bg-pink-500/5'
-                : 'border-border bg-secondary/30'
-            )}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-16 h-16 rounded-lg bg-secondary flex items-center justify-center border border-border">
-                <span className="text-2xl">👤</span>
-              </div>
-              <div>
-                <h4 className="font-semibold text-sm text-foreground">Default Initial Avatar</h4>
-                <p className="text-[10px] text-muted-foreground mt-1 leading-snug">Uses the default generic employee avatar icon across the org chart and boards.</p>
-              </div>
-            </div>
-            <div className="mt-4 text-[10px] text-pink-500 font-bold uppercase tracking-wider">Active Choice</div>
-          </button>
-
-          {avatarLibrary
-            .filter(av =>
-              av.title.toLowerCase().includes(avatarModalSearch.toLowerCase()) ||
-              av.description.toLowerCase().includes(avatarModalSearch.toLowerCase())
-            )
-            .map(av => {
-              const isSelected = newAgentAvatarHash === av.hash;
-              return (
-                <button
-                  key={av.hash}
-                  type="button"
-                  onClick={() => {
-                    setNewAgentAvatarHash(av.hash);
-                    setIsAvatarModalOpen(false);
-                    setAvatarModalSearch('');
-                  }}
-                  className={cn(
-                    'p-3 rounded-xl border text-left flex flex-col justify-between items-start transition-all hover:bg-secondary',
-                    isSelected
-                      ? 'border-pink-500 bg-pink-500/5'
-                      : 'border-border bg-secondary/30'
-                  )}
-                >
-                  <div className="flex gap-3">
-                    <AvatarImage
-                      hash={av.hash}
-                      alt={av.title}
-                      className="w-16 h-16 rounded-lg bg-background object-cover border border-border shrink-0"
-                    />
-                    <div>
-                      <h4 className="font-semibold text-sm text-foreground">{av.title}</h4>
-                      <p className="text-[10px] text-muted-foreground mt-1 leading-snug line-clamp-3">{av.description}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 w-full flex items-center justify-between text-[10px] uppercase font-mono tracking-wider">
-                    <span className="text-muted-foreground">Hash: {av.hash.slice(0, 8)}...</span>
-                    <span className={isSelected ? 'text-pink-500 font-bold' : 'text-blue-500'}>
-                      {isSelected ? 'Selected' : 'Select Avatar'}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-        </div>
-
-        <div className="border-t border-border pt-4 mt-4 flex justify-end">
-          <Button
-            type="button"
-            onClick={() => {
-              setIsAvatarModalOpen(false);
-              setAvatarModalSearch('');
-            }}
-          >
-            Close Window
-          </Button>
-        </div>
       </Modal>
 
     </div>

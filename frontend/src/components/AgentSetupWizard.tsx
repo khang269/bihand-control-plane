@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { X, Loader2, ChevronLeft, ChevronRight, Check, Bot, Terminal, Code2, Globe2 } from 'lucide-react';
 import api from '../lib/api';
 import { useLanguage } from '../context/LanguageContext';
-import { AvatarImage } from './AvatarImage';
 import { AGENT_TEMPLATES, SKILL_TEMPLATES } from '../lib/templates';
 
 const SKILL_TEMPLATE_INFOS = [
@@ -122,9 +121,6 @@ interface AgentSetupWizardProps {
   // Fleet-creation wizard: pass the already-loaded (and possibly draft/pre-login) credential
   // list directly instead of having this component fetch its own.
   credentialsOverride?: any[];
-  // Fleet-creation wizard: reuse the page's already-loaded avatar library instead of
-  // fetching it again.
-  avatarLibraryOverride?: any[];
   // When set, the wizard opens pre-filled for editing this agent instead of creating a new one.
   initialAgent?: Record<string, any> | null;
   submitLabel?: { en: string; vi: string };
@@ -152,7 +148,6 @@ const AgentSetupWizard: React.FC<AgentSetupWizardProps> = ({
   reportsToOptions,
   credentialsUserId,
   credentialsOverride,
-  avatarLibraryOverride,
   initialAgent,
   submitLabel,
   onClose,
@@ -169,10 +164,6 @@ const AgentSetupWizard: React.FC<AgentSetupWizardProps> = ({
   const [reportsTo, setReportsTo] = useState(() => initialAgent?.reportsTo || '');
   const [machineType, setMachineType] = useState(() => initialAgent?.machineType || 'e2-small');
   const durationDays = 30;
-  const [avatarHash, setAvatarHash] = useState(() => initialAgent?.avatarHash || '99d68008c17ea62c9c497582b58dc8b3');
-  const [avatarLibrary, setAvatarLibrary] = useState<any[]>(avatarLibraryOverride || []);
-  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
-  const [avatarModalSearch, setAvatarModalSearch] = useState('');
 
   // Step 2: Provider
   const [providerChoice, setProviderChoice] = useState<ProviderChoice>(() => resolveInitialProviderChoice(initialAgent));
@@ -193,16 +184,13 @@ const AgentSetupWizard: React.FC<AgentSetupWizardProps> = ({
   const [originalSkillToEditName, setOriginalSkillToEditName] = useState('');
   const [skillEditorContent, setSkillEditorContent] = useState('');
 
-  // credentialsOverride/avatarLibraryOverride are consumed once via the lazy useState
-  // initializers above - this effect only covers the "fetch it ourselves" (Hire Agent) path,
-  // so it never needs to setState synchronously in the effect body.
+  // credentialsOverride is consumed once via the lazy useState initializer above - this
+  // effect only covers the "fetch it ourselves" (Hire Agent) path, so it never needs to
+  // setState synchronously in the effect body.
   useEffect(() => {
     if (!credentialsOverride) {
       const url = credentialsUserId ? `/admin/users/${encodeURIComponent(credentialsUserId)}/credentials` : '/credentials';
       api.get(url).then(res => setExistingCredentials(res.data.credentials || [])).catch(console.error);
-    }
-    if (!avatarLibraryOverride) {
-      api.get('/avatar/library').then(res => setAvatarLibrary(res.data.library || [])).catch(console.error);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [credentialsUserId]);
@@ -325,7 +313,6 @@ const AgentSetupWizard: React.FC<AgentSetupWizardProps> = ({
       toolsMd: '',
       mcpConfig: '',
       enabledSkills: [],
-      avatarHash: avatarHash || null,
       customAgentMd: customInstructions || '',
       skillsFiles,
       oauthToken: usesSubscription ? oauthToken : null,
@@ -445,20 +432,6 @@ const AgentSetupWizard: React.FC<AgentSetupWizardProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold uppercase text-[#71717a] mb-1.5">{t('3D Avatar', 'Hình ảnh Đại diện 3D')}</label>
-                <button
-                  type="button"
-                  onClick={() => setIsAvatarModalOpen(true)}
-                  className="w-full bg-[#18181b] border border-[#27272a] rounded-md px-3 py-2 text-sm text-left text-white hover:border-[#3f3f46] transition-colors flex items-center justify-between"
-                >
-                  <span className="flex items-center gap-2 truncate">
-                    <AvatarImage hash={avatarHash} className="w-6 h-6 rounded bg-black object-cover border border-[#27272a] shrink-0" />
-                    {avatarLibrary.find(a => a.hash === avatarHash)?.title || t('Select 3D Avatar...', 'Chọn hình ảnh đại diện 3D...')}
-                  </span>
-                  <span className="text-xs text-blue-400 font-semibold uppercase font-mono shrink-0">{t('Choose ➔', 'Chọn ➔')}</span>
-                </button>
-              </div>
             </div>
           )}
 
@@ -745,70 +718,6 @@ const AgentSetupWizard: React.FC<AgentSetupWizardProps> = ({
           )}
         </div>
       </div>
-
-      {isAvatarModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-[#09090b] border border-[#27272a] rounded-xl w-full max-w-4xl max-h-[85vh] p-6 flex flex-col shadow-2xl text-left">
-            <div className="flex items-center justify-between border-b border-[#27272a] pb-4 mb-4">
-              <div>
-                <h3 className="text-lg font-bold text-[#fafafa]">✨ {t('Select 3D Avatar', 'Chọn hình ảnh đại diện 3D')}</h3>
-              </div>
-              <button onClick={() => { setIsAvatarModalOpen(false); setAvatarModalSearch(''); }} className="text-[#a1a1aa] hover:text-[#fafafa] transition-colors p-1">
-                <span className="text-xl">✕</span>
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <input
-                type="text"
-                placeholder={t('Search avatars by name or description...', 'Tìm kiếm hình ảnh đại diện...')}
-                value={avatarModalSearch}
-                onChange={e => setAvatarModalSearch(e.target.value)}
-                className="w-full bg-[#18181b] border border-[#27272a] rounded-md px-3 py-2 text-sm text-[#fafafa] focus:border-[#a1a1aa] outline-none transition-colors"
-              />
-            </div>
-
-            <div className="flex-1 overflow-y-auto min-h-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pr-2">
-              <button
-                type="button"
-                onClick={() => { setAvatarHash(''); setIsAvatarModalOpen(false); setAvatarModalSearch(''); }}
-                className={`p-3 rounded-xl border text-left flex flex-col justify-between items-start transition-all hover:bg-[#111113] ${avatarHash === '' ? 'border-pink-500 bg-pink-500/5' : 'border-[#27272a] bg-black/40'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-lg bg-[#27272a] flex items-center justify-center border border-[#3f3f46]">
-                    <span className="text-2xl">👤</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-sm text-white">{t('Default Initial Avatar', 'Hình đại diện mặc định')}</h4>
-                  </div>
-                </div>
-              </button>
-
-              {avatarLibrary
-                .filter(av => av.title.toLowerCase().includes(avatarModalSearch.toLowerCase()) || av.description.toLowerCase().includes(avatarModalSearch.toLowerCase()))
-                .map(av => {
-                  const isSelected = avatarHash === av.hash;
-                  return (
-                    <button
-                      key={av.hash}
-                      type="button"
-                      onClick={() => { setAvatarHash(av.hash); setIsAvatarModalOpen(false); setAvatarModalSearch(''); }}
-                      className={`p-3 rounded-xl border text-left flex flex-col justify-between items-start transition-all hover:bg-[#111113] ${isSelected ? 'border-pink-500 bg-pink-500/5' : 'border-[#27272a] bg-black/40'}`}
-                    >
-                      <div className="flex gap-3">
-                        <AvatarImage hash={av.hash} alt={av.title} className="w-16 h-16 rounded-lg bg-black object-cover border border-[#27272a] shrink-0" />
-                        <div>
-                          <h4 className="font-semibold text-sm text-white">{av.title}</h4>
-                          <p className="text-[10px] text-[#a1a1aa] mt-1 leading-snug line-clamp-3">{av.description}</p>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {isSkillEditorOpen && (
         <div className="fixed inset-0 z-[70] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">

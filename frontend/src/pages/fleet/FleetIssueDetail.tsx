@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { MarkdownRenderer } from '../../components/MarkdownRenderer';
-import { AvatarImage } from '../../components/AvatarImage';
+import { Avatar } from '../../components/Avatar';
 import { cn } from '../../lib/cn';
 import { Button, Select } from '../../components/ui';
 
@@ -20,7 +20,6 @@ interface Task {
   assigneeId?: string;
   assigneeRole?: string;
   assigneeTitle?: string;
-  assigneeAvatarHash?: string;
   parentTaskId?: string;
   result?: string;
   blockedByIds?: string[];
@@ -237,7 +236,7 @@ const FleetIssueDetail: React.FC = () => {
           {parentTask ? (
             <div className="flex flex-col items-center text-center max-w-[200px]">
               <div className="relative">
-                <AvatarImage hash={parentTask.assigneeAvatarHash || '99d68008c17ea62c9c497582b58dc8b3'} className="w-16 h-16 rounded-2xl object-cover border-2 border-border" fallbackSize={22} />
+                <Avatar name={parentTask.assigneeRole} className="w-16 h-16 rounded-2xl object-cover border-2 border-border" fallbackSize={22} />
                 <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-indigo-500 border border-card flex items-center justify-center text-[8px]">👑</span>
               </div>
               <span className="text-xs font-bold text-foreground mt-2 block font-mono">
@@ -253,7 +252,7 @@ const FleetIssueDetail: React.FC = () => {
           ) : task.parentTaskId ? (
             <div className="flex flex-col items-center text-center max-w-[200px]">
               <div className="relative">
-                <AvatarImage hash="99d68008c17ea62c9c497582b58dc8b3" className="w-16 h-16 rounded-2xl object-cover border-2 border-border" fallbackSize={22} />
+                <Avatar name="CEO" className="w-16 h-16 rounded-2xl object-cover border-2 border-border" fallbackSize={22} />
                 <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-indigo-500 border border-card flex items-center justify-center text-[8px]">👑</span>
               </div>
               <span className="text-xs font-bold text-foreground mt-2 block font-mono">CEO / Assigner</span>
@@ -262,7 +261,7 @@ const FleetIssueDetail: React.FC = () => {
           ) : (
             <div className="flex flex-col items-center text-center max-w-[200px]">
               <div className="relative">
-                <AvatarImage hash={task.assigneeAvatarHash} className="w-16 h-16 rounded-2xl object-cover border-2 border-border" fallbackSize={22} />
+                <Avatar name={task.assigneeRole} className="w-16 h-16 rounded-2xl object-cover border-2 border-border" fallbackSize={22} />
                 <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-primary border border-card flex items-center justify-center text-[8px] text-primary-foreground font-extrabold">👑</span>
               </div>
               <span className="text-xs font-bold text-foreground mt-2 block font-mono">{task.assigneeRole || 'Primary Owner'}</span>
@@ -301,7 +300,7 @@ const FleetIssueDetail: React.FC = () => {
                       className="flex items-center justify-between gap-3 p-2 bg-card hover:bg-secondary border border-border rounded-lg transition-colors group/sub"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <AvatarImage hash={sub.assigneeAvatarHash} className="w-7 h-7 rounded-lg object-cover border border-border" fallbackSize={14} />
+                        <Avatar name={sub.assigneeRole} className="w-7 h-7 rounded-lg object-cover border border-border" fallbackSize={14} />
                         <div className="min-w-0">
                           <span className="text-xs font-bold text-foreground block font-mono truncate">{sub.assigneeRole}</span>
                           <span className="text-[10px] text-muted-foreground block truncate leading-none">"{sub.title}"</span>
@@ -319,7 +318,7 @@ const FleetIssueDetail: React.FC = () => {
           ) : (
             <div className="flex flex-col items-center text-center max-w-[200px]">
               <div className="relative">
-                <AvatarImage hash={task.assigneeAvatarHash} className="w-16 h-16 rounded-2xl object-cover border-2 border-blue-500/20" fallbackSize={22} />
+                <Avatar name={task.assigneeRole} className="w-16 h-16 rounded-2xl object-cover border-2 border-blue-500/20" fallbackSize={22} />
                 <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-blue-500 border border-card flex items-center justify-center text-[8px]">⚙️</span>
               </div>
               <span className="text-xs font-bold text-foreground mt-2 block font-mono">{task.assigneeRole || 'Unassigned'}</span>

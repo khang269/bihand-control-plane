@@ -18,7 +18,7 @@ import Credentials from '../Credentials';
 import TasksView from '../../components/TasksView';
 import FleetIssueDetail from './FleetIssueDetail';
 import OrgChartFlow from '../../components/OrgChartFlow';
-import { AvatarImage } from '../../components/AvatarImage';
+import { Avatar } from '../../components/Avatar';
 import Drawer from '../../components/Drawer';
 import FleetNavDrawer from '../../components/fleet/FleetNavDrawer';
 import AgentSettingsDrawer from '../../components/fleet/AgentSettingsDrawer';
@@ -347,7 +347,7 @@ const FleetDashboard: React.FC = () => {
                     >
                       <div className="flex items-start gap-4 p-4 flex-1">
                         <Link to={`/fleet/${fleetId}/agents/${agent.id}`} className="block shrink-0">
-                          <AvatarImage hash={agent.avatarHash} className="w-11 h-12 rounded-xl object-cover border border-border" />
+                          <Avatar name={agent.role} className="w-11 h-12 rounded-xl object-cover border border-border" />
                         </Link>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 justify-between">

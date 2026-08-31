@@ -20,7 +20,6 @@ from fastapp.controllers.hermesProxyController import hermesRouter
 from fastapp.controllers.workController import workRouter
 from fastapp.controllers.agentM2MController import agentM2MRouter
 from fastapp.controllers.credentialController import credentialRouter
-from fastapp.controllers.avatarController import avatarRouter
 from fastapp.controllers.architectureController import architectureRouter
 from fastapp.controllers.filmStudioController import filmStudioRouter
 from fastapp.controllers.llmController import llmRouter
@@ -105,7 +104,6 @@ app.include_router(agentM2MRouter, prefix="/api/internal")
 app.include_router(channelWebhookRouter, prefix="/api/webhooks")
 app.include_router(wsRouter, prefix="/api")
 app.include_router(hermesRouter, prefix="/api")
-app.include_router(avatarRouter, prefix="/api/avatar")
 app.include_router(architectureRouter, prefix="/api/architecture")
 app.include_router(filmStudioRouter, prefix="/api/film-studio")
 app.include_router(llmRouter, prefix="/api/llm")
