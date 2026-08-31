@@ -3247,12 +3247,16 @@ async def reconfigure_agent_instance(fleet_id: str, instance_id: str, req: Upgra
     # Fast hot-patch swap: Instantly trigger a rebuild (provision task) to mount the new strategy, machineType, and configuration.
     InstanceModel._updateStatus(instance_id, "provisioning_queued")
     
+    # The original master dashboard password is never persisted (write-once,
+    # used only to set the VM's VNC password at provision time), so a
+    # hot-reconfigure has no way to recover it — mint a fresh one-time value
+    # instead of reusing a fixed string across every reconfigured instance.
     provision_instance_task.delay(
         instance_id=instance_id,
         user_id=fleet["userId"],
         provider=req.provider,
         credential_id=str(credential_id),
-        password="minerclaw_agent",
+        password=secrets.token_urlsafe(16),
         iteration=req.iteration
     )
 

@@ -30,6 +30,7 @@ flowchart TB
     subgraph GCP["Google Cloud — agent compute"]
         VM1["Agent VM — Claude Code<br/>isolated Compute Engine instance"]
         VM2["Agent VM — Codex / OpenClaw / …<br/>isolated Compute Engine instance"]
+        Sandbox["Trading Studio sandbox<br/>Cloud Run Job, zero-IAM-role SA<br/>no DB/GCP credential of any kind"]
         Gemini["Gemini API / Vertex AI<br/>gemini-3.5-flash, Veo, Imagen"]
     end
 
@@ -52,6 +53,10 @@ flowchart TB
     VM2 --"own LLM credential"--> LiteLLM
     LiteLLM --> Gemini
     Worker -.->|"generationService<br/>google-genai SDK"| Gemini
+
+    Worker --"jobs.run(), ~1s"--> Sandbox
+    Sandbox --"per-task token only<br/>/api/internal/sandbox/{llm,chat,result}"--> API
+    Sandbox --"market data"--> Gemini
 
     style Client fill:#eef2ff,stroke:#6366f1
     style GKE fill:#ecfdf5,stroke:#10b981
@@ -126,6 +131,16 @@ image, `Dockerfile.sandbox`, doesn't run in GKE at all — see below.
   the encrypted database and never touches agent-VM disk.
 - **Config-driven admin, not a code-level backdoor**: the admin allowlist is `ADMIN_USER`
   from the environment — nothing is hardcoded into the source.
+- **No hardcoded or shared secrets in the source itself**: this repo's tracked files and
+  full git history are scanned for credential-shaped strings (API keys, private-key
+  blocks, connection strings with embedded auth) before every publish — see
+  `deploy/k8s/secret.env.example` / `fastapp/.env.example` / `.env.template` for the only
+  places secrets are ever referenced, and they're placeholders, gitignored once filled
+  in. The one real finding from the last pass: a fleet's hot-reconfigure path
+  (`fleetController.py`) minted every reconfigured agent's dashboard/VNC password from a
+  single fixed string, because the original master password is write-once and never
+  persisted — fixed to mint a fresh `secrets.token_urlsafe(16)` per reconfigure instead
+  of reusing one guessable value across every instance that ever took that path.
 - **LLM-generated code never runs next to a real credential**: Trading Studio's agent
   writes and executes its own backtest strategies, so that code has to be treated as
   hostile. The whole agent flow (interpret prompt, fetch market data, generate +
