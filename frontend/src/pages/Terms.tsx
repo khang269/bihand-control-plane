@@ -78,7 +78,7 @@ const Terms: React.FC = () => {
                 <p className="text-xs text-muted-foreground font-mono">LAST UPDATED: JUNE 6, 2026 &middot; REF: BIHAND-TOS-V2</p>
 
                 <p className="text-sm text-foreground/90 leading-relaxed">
-                  Welcome to <strong>Bihand</strong>, owned and operated by <strong>Graphicsminer</strong> (referred to as "Bihand", "we", "us", or "our"). These General Terms & Conditions govern your access to and use of our corporate AI agent orchestration control plane, our websites, APIs, and virtual machine setups. Please read these terms carefully before deploying any agent VM fleets.
+                  Welcome to <strong>Bihand</strong>, an open-source AI agent orchestration control plane (referred to as "Bihand", "we", "us", or "our"). These General Terms & Conditions are a template — if you self-host this platform for others, customize them with your own operator identity before publishing. Please read these terms carefully before deploying any agent VM fleets.
                 </p>
 
                 <section className="space-y-3 pt-4">
@@ -98,7 +98,7 @@ const Terms: React.FC = () => {
                 <section className="space-y-3">
                   <h3 className="text-lg font-bold">3. Intellectual Property Rights</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    The Bihand platform code, design patterns, UI configurations, branding, and proprietary background orchestration engines are the exclusive intellectual property of <strong>Graphicsminer</strong>. All code, files, assets, databases, and digital artifacts generated inside your private GCP VM workspace remain 100% your exclusive property.
+                    The Bihand platform code is open source, licensed under Apache License 2.0 — see the <code>LICENSE</code> file in the repository for the full terms. All code, files, assets, databases, and digital artifacts generated inside your private GCP VM workspace remain 100% your exclusive property.
                   </p>
                 </section>
 
@@ -115,7 +115,7 @@ const Terms: React.FC = () => {
                 <p className="text-xs text-muted-foreground font-mono">CẬP NHẬT LẦN CUỐI: NGÀY 6 THÁNG 6 NĂM 2026 &middot; REF: BIHAND-TOS-V2</p>
 
                 <p className="text-sm text-foreground/90 leading-relaxed">
-                  Chào mừng bạn đến với <strong>Bihand</strong>, được sở hữu và vận hành bởi <strong>Graphicsminer</strong> ("Bihand", "chúng tôi" hoặc "của chúng tôi"). Điều Khoản và Điều Kiện Chung này điều chỉnh việc bạn truy cập và sử dụng bảng điều khiển tác nhân AI tự trị Bihand, các trang web, API và cấu hình máy ảo của chúng tôi. Vui lòng đọc kỹ các điều khoản này trước khi khởi chạy hạm đội tác nhân AI.
+                  Chào mừng bạn đến với <strong>Bihand</strong>, một bảng điều khiển điều phối tác nhân AI mã nguồn mở ("Bihand", "chúng tôi" hoặc "của chúng tôi"). Điều Khoản và Điều Kiện Chung này là một mẫu tham khảo — nếu bạn tự triển khai nền tảng này cho người khác sử dụng, hãy tùy chỉnh lại với danh tính đơn vị vận hành của riêng bạn trước khi công bố. Vui lòng đọc kỹ các điều khoản này trước khi khởi chạy hạm đội tác nhân AI.
                 </p>
 
                 <section className="space-y-3 pt-4">
@@ -135,7 +135,7 @@ const Terms: React.FC = () => {
                 <section className="space-y-3">
                   <h3 className="text-lg font-bold">3. Quyền Sở Hữu Trí Tuệ</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Mã nguồn nền tảng Bihand, thiết kế giao diện, cấu trúc điều phối, thương hiệu và các công cụ giám sát chạy ngầm thuộc quyền sở hữu trí tuệ độc quyền của <strong>Graphicsminer</strong>. Toàn bộ mã nguồn, tệp tin, cơ sở dữ liệu và các sản phẩm số được tạo ra bên trong không gian máy ảo GCP riêng tư của bạn hoàn toàn thuộc quyền sở hữu 100% của riêng bạn.
+                    Mã nguồn nền tảng Bihand là mã nguồn mở, được cấp phép theo Apache License 2.0 — xem tệp <code>LICENSE</code> trong kho mã nguồn để biết đầy đủ điều khoản. Toàn bộ mã nguồn, tệp tin, cơ sở dữ liệu và các sản phẩm số được tạo ra bên trong không gian máy ảo GCP riêng tư của bạn hoàn toàn thuộc quyền sở hữu 100% của riêng bạn.
                   </p>
                 </section>
 

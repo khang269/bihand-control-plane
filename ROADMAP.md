@@ -30,9 +30,9 @@ Three things make this harder than a license-and-push:
    expects remote Atlas), GCP Compute is the only provisioner, and Google ID token is the only login
    path. There is no provider abstraction of any kind.
 2. **The repo cannot be published as-is.** A live `GEMINI_API_KEY` sits in git history
-   (`docker-compose.test.yml:26`, commits `be8696b`/`fc962dc`/`f4026f6`), and
-   `support@graphicsminer.com` is a **hardcoded admin allowlist** — shipping it makes the maintainer
-   a permanent admin on every third-party deployment.
+   (`docker-compose.test.yml:26`, commits `be8696b`/`fc962dc`/`f4026f6`), and the maintainer's own
+   email is a **hardcoded admin allowlist** — shipping it makes the maintainer a permanent admin on
+   every third-party deployment.
 3. **70% of the repo is vendored trading code** that is now out of scope entirely.
 
 Intended outcome: a ~33k-line, comprehensible, tested repo where **`docker compose up` with no
@@ -319,7 +319,7 @@ sequencing above and the Backlog section after the roadmap.
 ### P0 — Legal, secrets, scope reduction (2 wk) — **GATE**
 
 **Blocking security item.** Remove the hardcoded admin allowlist — `fastapp/utils/adminAuth.py:12-14`
-and `fastapp/controllers/adminController.py:28-31` both hardcode `support@graphicsminer.com`.
+and `fastapp/controllers/adminController.py:28-31` both hardcode the maintainer's own email.
 Replace with `settings.admin_emails: list[str] = []` plus a first-run `--make-admin <email>` CLI.
 (`models/userModel.py:12` is only a docstring example — scrub for tidiness, not urgency.)
 
@@ -368,19 +368,18 @@ currently tracked, so **`frontend/package-lock.json` is not committed** and `Doc
 be committed today.
 
 **Strip infra identifiers.** Replace every default that points at the maintainer's infrastructure
-with `None` + a startup validation error (never a working default): `modular-ethos-468709-u4`
-(`gcpService.py:46`), `api.bihand.com`, `bihand.graphicsminer.com`,
-`sticker-generator.graphicsminer.com`. Rename the `nemoclaw-dashboard` firewall tag →
-`agent-dashboard` (`gcpService.py:338`).
+with `None` + a startup validation error (never a working default): the maintainer's GCP project ID
+(`gcpService.py:46`), and the maintainer's own domains used as API/sticker-service fallback URLs.
+Rename the `nemoclaw-dashboard` firewall tag → `agent-dashboard` (`gcpService.py:338`).
 
 **Also a live credential, and easy to miss because it's a frontend fallback:** `Login.tsx:59` and
-`Incorporate.tsx:1649` hardcode the maintainer's **Google OAuth client ID**
-(`428686556851-0ac019md8odk9pbc23buff8m3dk1kr0u...`) as the default when `VITE_GOOGLE_CLIENT_ID` is
-unset. Every self-hosted install would silently authenticate against your OAuth app. Remove both
-literals; the login page renders its form from `GET /api/auth/config` instead.
+`Incorporate.tsx:1649` hardcode the maintainer's **Google OAuth client ID** as the default when
+`VITE_GOOGLE_CLIENT_ID` is unset. Every self-hosted install would silently authenticate against
+your OAuth app. Remove both literals; the login page renders its form from `GET /api/auth/config`
+instead.
 
 **Verify:** `gitleaks detect` clean on the new single-commit history;
-`grep -riE 'graphicsminer|modular-ethos|AIza|sk_live|rk_live'` returns zero;
+`grep -riE 'AIza|sk_live|rk_live'` returns zero;
 `python -c "import fastapp"` imports; `cd frontend && npm ci && npm run build` succeeds with no
 unresolved imports from the deleted pages.
 
@@ -1011,7 +1010,7 @@ additive, not a redesign.
 | Integration | Real Mongo + Redis + API + agent container; assert `todo → in_progress → done` through the real heartbeat, ~60s, every PR | P5 |
 | Cloud (nightly) | `(gcp-vm, image)` provisioning against a real GCP project; `@pytest.mark.cloud`, excluded from PR CI | Backlog |
 | Manual | `docker compose up` → wizard → fleet → agent completes a task, on a machine with no gcloud credentials | P8, P9 |
-| Release | `gitleaks detect` clean on the squashed history; `grep -riE 'graphicsminer\|modular-ethos\|AIza\|sk_live\|rk_live'` empty | P0, P9 |
+| Release | `gitleaks detect` clean on the squashed history; `grep -riE 'AIza\|sk_live\|rk_live'` empty | P0, P9 |
 
 ---
 

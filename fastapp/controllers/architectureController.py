@@ -29,7 +29,7 @@ executor = ThreadPoolExecutor(max_workers=10)
 RENDERING_PRESETS = {}
 
 # Load GCS Bucket Name safely from .env config
-BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", "graphicsminer-global-object-bucket")
+BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME")  # required — no maintainer default
 
 MODEL_MAPPING = {
     "nano_banana_2_lite": "models/gemini-3.1-flash-lite-image",

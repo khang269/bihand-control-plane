@@ -21,7 +21,7 @@ filmStudioRouter = APIRouter()
 # Global isolated background thread pool executor for high-performance Film Studio background processing
 executor = ThreadPoolExecutor(max_workers=10)
 
-BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", "graphicsminer-global-object-bucket")
+BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME")  # required — no maintainer default
 
 # ----------------- PYDANTIC REQUEST SCHEMAS -----------------
 

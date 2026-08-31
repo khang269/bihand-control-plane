@@ -12,7 +12,7 @@ from fastapp.utils.fileUtils import upload_base64_to_gcs, generate_download_sign
 
 logger = logging.getLogger(__name__)
 
-BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME", "graphicsminer-global-object-bucket")
+BUCKET_NAME = os.environ.get("GCS_BUCKET_NAME")  # required — no maintainer default
 
 MODEL_MAPPING = {
     "nano_banana_2_lite": "models/gemini-3.1-flash-lite-image",
